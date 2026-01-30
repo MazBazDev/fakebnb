@@ -3,6 +3,11 @@ import { apiFetch } from '@/services/api'
 export type Listing = {
   id: number
   host_user_id: number
+  host?: {
+    id: number
+    name: string
+    profile_photo_url?: string | null
+  }
   title: string
   description: string
   city: string

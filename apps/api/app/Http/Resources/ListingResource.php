@@ -24,6 +24,13 @@ class ListingResource extends JsonResource
         return [
             'id' => $this->id,
             'host_user_id' => $this->host_user_id,
+            'host' => $this->whenLoaded('host', function () {
+                return [
+                    'id' => $this->host->id,
+                    'name' => $this->host->name,
+                    'profile_photo_url' => $this->host->profile_photo_url,
+                ];
+            }),
             'title' => $this->title,
             'description' => $this->description,
             'city' => $this->city,

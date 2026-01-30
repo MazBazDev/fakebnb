@@ -15,6 +15,7 @@ const bookingSuccess = ref<string | null>(null)
 const isSubmitting = ref(false)
 const messageError = ref<string | null>(null)
 const isMessaging = ref(false)
+const bookingStatus = ref<'pending' | 'confirmed' | 'rejected' | null>(null)
 const bookingForm = ref({
   start_date: '',
   end_date: '',
@@ -32,6 +33,18 @@ const amenityLabels: Record<string, string> = {
   hot_tub: 'Jacuzzi',
 }
 
+function formatStatus(status?: string | null) {
+  if (status === 'confirmed') return 'Confirmée'
+  if (status === 'rejected') return 'Refusée'
+  return 'En attente'
+}
+
+function statusClass(status?: string | null) {
+  if (status === 'confirmed') return 'bg-emerald-50 text-emerald-600 border-emerald-100'
+  if (status === 'rejected') return 'bg-rose-50 text-rose-600 border-rose-100'
+  return 'bg-amber-50 text-amber-600 border-amber-100'
+}
+
 async function load() {
   isLoading.value = true
   error.value = null
@@ -39,6 +52,7 @@ async function load() {
   try {
     const id = Number(route.params.id)
     listing.value = await fetchListing(id)
+    bookingStatus.value = null
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Impossible de charger l’annonce.'
   } finally {
@@ -65,6 +79,7 @@ async function submitBooking() {
     })
     bookingSuccess.value = 'Demande envoyée. En attente de validation de l’hôte.'
     bookingForm.value = { start_date: '', end_date: '' }
+    bookingStatus.value = 'pending'
   } catch (err) {
     bookingError.value = err instanceof Error ? err.message : 'Impossible de réserver.'
   } finally {
@@ -114,6 +129,22 @@ async function contactHost() {
         <p class="text-sm uppercase tracking-[0.2em] text-slate-500">{{ listing.city }}</p>
         <h1 class="text-3xl font-semibold text-slate-900">{{ listing.title }}</h1>
         <p class="text-sm text-slate-500">{{ listing.address }}</p>
+        <div v-if="listing.host" class="flex items-center gap-3">
+          <span
+            class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-xs font-semibold text-slate-700"
+          >
+            <img
+              v-if="listing.host.profile_photo_url"
+              :src="listing.host.profile_photo_url"
+              class="h-full w-full object-cover"
+            />
+            <span v-else>{{ listing.host.name?.[0] ?? '?' }}</span>
+          </span>
+          <div class="text-xs text-slate-500">
+            <p class="font-semibold text-slate-700">Hôte</p>
+            <p>{{ listing.host.name }}</p>
+          </div>
+        </div>
       </header>
 
       <div v-if="listing.images?.length" class="overflow-hidden rounded-3xl border border-slate-200">
@@ -137,6 +168,14 @@ async function contactHost() {
           <span class="text-xs uppercase tracking-[0.2em] text-slate-400">
             Id #{{ listing.id }}
           </span>
+        </div>
+
+        <div
+          v-if="bookingStatus"
+          class="mt-4 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold"
+          :class="statusClass(bookingStatus)"
+        >
+          Statut réservation: {{ formatStatus(bookingStatus) }}
         </div>
 
         <p class="mt-4 text-sm text-slate-600">{{ listing.description }}</p>
