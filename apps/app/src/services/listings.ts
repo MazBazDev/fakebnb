@@ -29,11 +29,33 @@ export type ListingImage = {
 }
 
 type ListingResponse = { data: Listing }
-type ListingsResponse = { data: Listing[] }
+type ListingsResponse = {
+  data: Listing[]
+  meta?: {
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+  }
+}
 
-export async function fetchListings() {
-  const response = await apiFetch<ListingsResponse>('/listings')
-  return response.data
+export async function fetchListings(filters?: {
+  search?: string
+  city?: string
+  min_guests?: number
+  page?: number
+  per_page?: number
+}) {
+  const params = new URLSearchParams()
+  if (filters?.search) params.set('search', filters.search)
+  if (filters?.city) params.set('city', filters.city)
+  if (filters?.min_guests) params.set('min_guests', String(filters.min_guests))
+  if (filters?.page) params.set('page', String(filters.page))
+  if (filters?.per_page) params.set('per_page', String(filters.per_page))
+
+  const query = params.toString()
+  const response = await apiFetch<ListingsResponse>(`/listings${query ? `?${query}` : ''}`)
+  return response
 }
 
 export async function fetchListing(id: number) {

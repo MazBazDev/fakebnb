@@ -14,9 +14,13 @@ use Illuminate\Http\Request;
 
 class ListingController extends Controller
 {
-    public function index(ListingService $listingService)
+    public function index(Request $request, ListingService $listingService)
     {
-        return ListingResource::collection($listingService->listPublic());
+        $filters = $request->only(['search', 'city', 'min_guests']);
+        $perPage = (int) $request->integer('per_page', 12);
+        $perPage = max(1, min($perPage, 60));
+
+        return ListingResource::collection($listingService->listPublic($filters, $perPage));
     }
 
     public function show(Listing $listing)

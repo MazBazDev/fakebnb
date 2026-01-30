@@ -12,7 +12,7 @@ const router = createRouter({
     {
       path: '/listings',
       name: 'listings',
-      component: () => import('@/views/ListingsIndexView.vue'),
+      redirect: '/',
     },
     {
       path: '/listings/:id',

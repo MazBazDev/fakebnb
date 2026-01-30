@@ -12,9 +12,29 @@ class ListingService
     {
     }
 
-    public function listPublic()
+    public function listPublic(array $filters = [], int $perPage = 12)
     {
-        return Listing::query()->with('images')->latest()->get();
+        $query = Listing::query()->with('images')->latest();
+
+        if (! empty($filters['search'])) {
+            $term = $filters['search'];
+            $query->where(function ($builder) use ($term) {
+                $builder->where('title', 'like', "%{$term}%")
+                    ->orWhere('description', 'like', "%{$term}%")
+                    ->orWhere('city', 'like', "%{$term}%")
+                    ->orWhere('address', 'like', "%{$term}%");
+            });
+        }
+
+        if (! empty($filters['city'])) {
+            $query->where('city', $filters['city']);
+        }
+
+        if (! empty($filters['min_guests'])) {
+            $query->where('guest_capacity', '>=', (int) $filters['min_guests']);
+        }
+
+        return $query->paginate($perPage);
     }
 
     public function listForHost(User $user)
