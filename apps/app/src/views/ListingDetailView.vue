@@ -156,6 +156,19 @@ function statusClass(status?: string | null) {
   return 'bg-amber-50 text-amber-600 border-amber-100'
 }
 
+const nightsCount = computed(() => {
+  if (!bookingForm.value.start_date || !bookingForm.value.end_date) return 0
+  const start = new Date(bookingForm.value.start_date)
+  const end = new Date(bookingForm.value.end_date)
+  const diffMs = end.getTime() - start.getTime()
+  return diffMs > 0 ? Math.ceil(diffMs / (1000 * 60 * 60 * 24)) : 0
+})
+
+const totalPrice = computed(() => {
+  if (!listing.value) return 0
+  return nightsCount.value * listing.value.price_per_night
+})
+
 function openLightbox(url: string) {
   lightboxImage.value = url
   lightboxOpen.value = true
@@ -426,7 +439,9 @@ async function contactHost() {
           >
             <div class="flex items-center justify-between">
               <h2 class="text-sm font-semibold text-slate-700">Réserver ce logement</h2>
-              <span class="text-xs text-slate-400">Demande en attente</span>
+              <span v-if="bookingStatus" class="text-xs text-slate-400">
+                Demande en attente
+              </span>
             </div>
 
             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -494,22 +509,24 @@ async function contactHost() {
               </div>
             </div>
 
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
-              <div class="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  Arrivée
-                </p>
-                <p class="mt-2 text-base font-semibold text-slate-900">
+            <div class="space-y-2 text-[11px] text-slate-500">
+              <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-2">
+                <span class="font-semibold uppercase tracking-[0.2em] text-slate-400">Arrivée</span>
+                <span class="text-xs font-semibold text-slate-900">
                   {{ bookingForm.start_date || 'Sélectionner une date' }}
-                </p>
+                </span>
               </div>
-              <div class="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  Départ
-                </p>
-                <p class="mt-2 text-base font-semibold text-slate-900">
+              <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-2">
+                <span class="font-semibold uppercase tracking-[0.2em] text-slate-400">Départ</span>
+                <span class="text-xs font-semibold text-slate-900">
                   {{ bookingForm.end_date || 'Sélectionner une date' }}
-                </p>
+                </span>
+              </div>
+              <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
+                <span class="font-semibold uppercase tracking-[0.2em] text-slate-400">Total</span>
+                <span class="text-sm font-semibold text-slate-900">
+                  {{ nightsCount > 0 ? `${totalPrice} € (${nightsCount} nuit${nightsCount > 1 ? 's' : ''})` : '—' }}
+                </span>
               </div>
             </div>
 
