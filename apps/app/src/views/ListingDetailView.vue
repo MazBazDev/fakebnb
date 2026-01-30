@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, RouterLink, useRouter } from 'vue-router'
 import { fetchListing, type Listing } from '@/services/listings'
-import { createBooking, fetchListingBookings } from '@/services/bookings'
+import { createBooking, fetchListingBookings, fetchBookings, type Booking } from '@/services/bookings'
 import { createConversation } from '@/services/conversations'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 const listing = ref<Listing | null>(null)
 const isLoading = ref(false)
 const error = ref<string | null>(null)
@@ -17,6 +19,7 @@ const messageError = ref<string | null>(null)
 const isMessaging = ref(false)
 const bookingStatus = ref<'pending' | 'confirmed' | 'rejected' | null>(null)
 const blockedDates = ref<Set<string>>(new Set())
+const myActiveBookings = ref<Booking[]>([])
 const lightboxOpen = ref(false)
 const lightboxImage = ref<string | null>(null)
 const bookingForm = ref({
@@ -156,6 +159,29 @@ function statusClass(status?: string | null) {
   return 'bg-amber-50 text-amber-600 border-amber-100'
 }
 
+function isActiveBooking(booking: Booking) {
+  const today = new Date()
+  const todayValue = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
+  const end = new Date(booking.end_date)
+  return booking.status !== 'rejected' && end >= todayValue
+}
+
+async function loadActiveBookings() {
+  if (!auth.isAuthenticated) {
+    myActiveBookings.value = []
+    return
+  }
+
+  try {
+    const allBookings = await fetchBookings()
+    myActiveBookings.value = allBookings.filter(
+      (booking) => booking.guest_user_id === auth.user?.id && isActiveBooking(booking)
+    )
+  } catch {
+    myActiveBookings.value = []
+  }
+}
+
 const nightsCount = computed(() => {
   if (!bookingForm.value.start_date || !bookingForm.value.end_date) return 0
   const start = new Date(bookingForm.value.start_date)
@@ -187,6 +213,7 @@ async function load() {
     const id = Number(route.params.id)
     listing.value = await fetchListing(id)
     const confirmed = await fetchListingBookings(id)
+    await loadActiveBookings()
     blockedDates.value = new Set(
       confirmed.flatMap((booking) => {
         const start = new Date(booking.start_date)
@@ -209,6 +236,16 @@ async function load() {
 }
 
 onMounted(load)
+watch(
+  () => auth.isAuthenticated,
+  (isAuthed) => {
+    if (isAuthed) {
+      loadActiveBookings()
+    } else {
+      myActiveBookings.value = []
+    }
+  }
+)
 
 async function submitBooking() {
   bookingError.value = null
@@ -292,6 +329,13 @@ async function contactHost() {
           <span>{{ listing.city }}</span>
           <span class="h-1 w-1 rounded-full bg-slate-300"></span>
           <span>Annonce #{{ listing.id }}</span>
+          <RouterLink
+            v-if="myActiveBookings.length"
+            to="/bookings"
+            class="ml-auto rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 hover:text-slate-900"
+          >
+            Voir mes réservations ({{ myActiveBookings.length }})
+          </RouterLink>
         </div>
         <h1 class="text-4xl font-semibold text-slate-900 md:text-5xl">{{ listing.title }}</h1>
         <p class="text-sm text-slate-500">{{ listing.address }}</p>
