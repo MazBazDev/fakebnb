@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\Gate;
 
 class ListingService
 {
+    public function __construct(private RoleService $roleService)
+    {
+    }
+
     public function listPublic()
     {
         return Listing::query()->with('images')->latest()->get();
@@ -25,6 +29,7 @@ class ListingService
     public function create(User $host, array $data): Listing
     {
         Gate::authorize('create', Listing::class);
+        $this->roleService->assignRole($host, 'host');
 
         return Listing::create([
             'host_user_id' => $host->id,

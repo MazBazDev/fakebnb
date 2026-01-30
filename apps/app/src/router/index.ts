@@ -59,27 +59,50 @@ const router = createRouter({
     },
     {
       path: '/dashboard',
-      name: 'dashboard',
+      redirect: '/host',
+    },
+    {
+      path: '/host',
+      name: 'host-dashboard',
       component: () => import('@/views/DashboardView.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, layout: 'host' },
     },
     {
-      path: '/dashboard/cohosts',
-      name: 'cohosts',
+      path: '/host/cohosts',
+      name: 'host-cohosts',
       component: () => import('@/views/CohostsView.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, layout: 'host' },
     },
     {
-      path: '/dashboard/listings/new',
-      name: 'listing-create',
+      path: '/host/listings/new',
+      name: 'host-listing-create',
       component: () => import('@/views/ListingCreateView.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, layout: 'host' },
     },
     {
-      path: '/dashboard/listings',
-      name: 'my-listings',
+      path: '/host/listings',
+      name: 'host-listings',
       component: () => import('@/views/MyListingsView.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, layout: 'host' },
+    },
+    {
+      path: '/host/bookings',
+      name: 'host-bookings',
+      component: () => import('@/views/HostBookingsView.vue'),
+      meta: { requiresAuth: true, layout: 'host' },
+    },
+    {
+      path: '/host/messages',
+      name: 'host-messages',
+      component: () => import('@/views/MessagesView.vue'),
+      meta: { requiresAuth: true, layout: 'host' },
+    },
+    {
+      path: '/host/messages/:id',
+      name: 'host-message-thread',
+      component: () => import('@/views/MessageThreadView.vue'),
+      meta: { requiresAuth: true, layout: 'host' },
+      props: true,
     },
     {
       path: '/:pathMatch(.*)*',
@@ -97,7 +120,7 @@ router.beforeEach((to) => {
   }
 
   if (to.meta.guestOnly && auth.isAuthenticated) {
-    return { name: 'dashboard' }
+    return { name: 'listings' }
   }
 
   return true

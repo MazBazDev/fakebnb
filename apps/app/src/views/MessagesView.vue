@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 import { fetchConversations, type Conversation } from '@/services/conversations'
 
+const route = useRoute()
 const conversations = ref<Conversation[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
+const basePath = computed(() => (route.meta.layout === 'host' ? '/host/messages' : '/messages'))
 
 async function load() {
   isLoading.value = true
@@ -65,7 +67,7 @@ onMounted(load)
             </p>
           </div>
           <RouterLink
-            :to="`/messages/${conversation.id}`"
+            :to="`${basePath}/${conversation.id}`"
             class="text-xs font-semibold text-slate-700 hover:text-slate-900"
           >
             Ouvrir

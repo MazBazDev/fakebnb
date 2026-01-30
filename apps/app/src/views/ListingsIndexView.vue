@@ -31,7 +31,7 @@ onMounted(load)
         <h1 class="text-3xl font-semibold text-slate-900">Explore les logements</h1>
       </div>
       <RouterLink
-        to="/dashboard/listings/new"
+        to="/host/listings/new"
         class="inline-flex rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
       >
         Publier une annonce

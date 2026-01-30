@@ -18,7 +18,7 @@ async function submit() {
 
   try {
     await auth.register({ name: name.value, email: email.value, password: password.value })
-    await router.replace('/dashboard')
+    await router.replace('/listings')
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Inscription impossible.'
   } finally {

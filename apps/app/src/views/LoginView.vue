@@ -18,7 +18,7 @@ async function submit() {
 
   try {
     await auth.login({ email: email.value, password: password.value })
-    const redirect = (route.query.redirect as string | undefined) ?? '/dashboard'
+    const redirect = (route.query.redirect as string | undefined) ?? '/listings'
     await router.replace(redirect)
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Connexion impossible.'

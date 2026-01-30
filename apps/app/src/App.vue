@@ -7,6 +7,7 @@ import { gravatarUrl } from '@/utils/gravatar'
 const auth = useAuthStore()
 const route = useRoute()
 const isAuthed = computed(() => auth.isAuthenticated)
+const isHostRoute = computed(() => route.meta.layout === 'host')
 const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 const sidebarOpen = ref(false)
@@ -29,7 +30,7 @@ const initials = computed(() => {
 })
 
 const showSidebar = computed(() => {
-  return isAuthed.value && !['login', 'register'].includes(String(route.name ?? ''))
+  return isAuthed.value && isHostRoute.value
 })
 
 onMounted(async () => {
@@ -74,23 +75,26 @@ onUnmounted(() => {
         </RouterLink>
 
         <nav class="mt-8 flex flex-1 flex-col gap-2 text-sm text-slate-600">
-          <RouterLink to="/listings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Annonces
+          <RouterLink to="/host" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+            Tableau de bord
           </RouterLink>
-          <RouterLink to="/dashboard/listings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+          <RouterLink to="/host/listings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
             Mes annonces
           </RouterLink>
-          <RouterLink to="/dashboard/cohosts" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+          <RouterLink to="/host/listings/new" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+            Nouvelle annonce
+          </RouterLink>
+          <RouterLink to="/host/bookings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+            Réservations reçues
+          </RouterLink>
+          <RouterLink to="/host/cohosts" class="rounded-xl px-3 py-2 hover:bg-slate-50">
             Co-hôtes
           </RouterLink>
-          <RouterLink to="/bookings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Réservations
+          <RouterLink to="/host/messages" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+            Messages hôte
           </RouterLink>
-          <RouterLink to="/messages" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Messages
-          </RouterLink>
-          <RouterLink to="/profile" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Profil
+          <RouterLink to="/listings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+            Retour au mode voyageur
           </RouterLink>
         </nav>
 
@@ -145,6 +149,13 @@ onUnmounted(() => {
               <RouterLink to="/listings" class="text-slate-600 hover:text-slate-900">
                 Annonces
               </RouterLink>
+              <RouterLink
+                v-if="isAuthed"
+                to="/host"
+                class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
+              >
+                Mode hôte
+              </RouterLink>
               <RouterLink v-if="!isAuthed" to="/login" class="text-slate-600 hover:text-slate-900">
                 Connexion
               </RouterLink>
@@ -179,6 +190,12 @@ onUnmounted(() => {
                     class="block rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                   >
                     Profil
+                  </RouterLink>
+                  <RouterLink
+                    to="/host"
+                    class="block rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  >
+                    Mode hôte
                   </RouterLink>
                   <RouterLink
                     to="/bookings"
@@ -227,23 +244,26 @@ onUnmounted(() => {
           Fermer
         </button>
         <nav class="flex flex-col gap-2 text-sm text-slate-600">
-          <RouterLink to="/listings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Annonces
+          <RouterLink to="/host" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+            Tableau de bord
           </RouterLink>
-          <RouterLink to="/dashboard/listings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+          <RouterLink to="/host/listings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
             Mes annonces
           </RouterLink>
-          <RouterLink to="/dashboard/cohosts" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+          <RouterLink to="/host/listings/new" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+            Nouvelle annonce
+          </RouterLink>
+          <RouterLink to="/host/bookings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+            Réservations reçues
+          </RouterLink>
+          <RouterLink to="/host/cohosts" class="rounded-xl px-3 py-2 hover:bg-slate-50">
             Co-hôtes
           </RouterLink>
-          <RouterLink to="/bookings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Réservations
+          <RouterLink to="/host/messages" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+            Messages hôte
           </RouterLink>
-          <RouterLink to="/messages" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Messages
-          </RouterLink>
-          <RouterLink to="/profile" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Profil
+          <RouterLink to="/listings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+            Retour au mode voyageur
           </RouterLink>
         </nav>
       </aside>

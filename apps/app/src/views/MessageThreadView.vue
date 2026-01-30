@@ -15,6 +15,7 @@ const channelName = ref<string | null>(null)
 const threadRef = ref<HTMLDivElement | null>(null)
 const auth = useAuthStore()
 const currentUserId = computed(() => auth.user?.id ?? null)
+const messagesPath = computed(() => (route.meta.layout === 'host' ? '/host/messages' : '/messages'))
 
 async function load() {
   isLoading.value = true
@@ -84,7 +85,10 @@ onUnmounted(() => {
 <template>
   <section class="flex h-[calc(100vh-160px)] flex-col gap-4">
     <header class="flex items-center justify-between">
-      <RouterLink to="/messages" class="text-sm font-semibold text-slate-600 hover:text-slate-900">
+      <RouterLink
+        :to="messagesPath"
+        class="text-sm font-semibold text-slate-600 hover:text-slate-900"
+      >
         ← Retour aux conversations
       </RouterLink>
       <span class="text-xs uppercase tracking-[0.2em] text-slate-400">Fil de discussion</span>

@@ -20,7 +20,7 @@ class ListingPolicy
 
     public function create(User $user): bool
     {
-        return $this->isHost($user);
+        return true;
     }
 
     public function update(User $user, Listing $listing): bool
@@ -41,8 +41,4 @@ class ListingPolicy
         return $listing->host_user_id === $user->id;
     }
 
-    private function isHost(User $user): bool
-    {
-        return $user->roles()->where('name', 'host')->exists();
-    }
 }

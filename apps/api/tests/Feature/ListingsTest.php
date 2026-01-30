@@ -51,7 +51,7 @@ it('shows a listing detail', function () {
         ->assertJsonPath('data.id', $listing->id);
 });
 
-it('prevents non-host users from creating listings', function () {
+it('allows users to create a first listing and becomes host', function () {
     $user = User::factory()->create();
     $headers = authHeaderFor($user, 'listing-non-host');
 
@@ -64,7 +64,10 @@ it('prevents non-host users from creating listings', function () {
         'price_per_night' => 90,
     ], $headers);
 
-    $response->assertStatus(403);
+    $response->assertCreated()
+        ->assertJsonPath('data.host_user_id', $user->id);
+
+    expect($user->fresh()->roles()->where('name', 'host')->exists())->toBeTrue();
 });
 
 it('allows a host to create listings', function () {
