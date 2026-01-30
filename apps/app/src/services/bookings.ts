@@ -4,6 +4,11 @@ export type Booking = {
   id: number
   listing_id: number
   guest_user_id: number
+  guest?: {
+    id: number
+    name: string
+    profile_photo_url?: string | null
+  }
   start_date: string
   end_date: string
   status: 'pending' | 'confirmed' | 'rejected'

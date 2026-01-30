@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { confirmBooking, fetchBookings, rejectBooking, type Booking } from '@/services/bookings'
+import { createConversation } from '@/services/conversations'
+import { useRouter } from 'vue-router'
 import { fetchMyListings, type Listing } from '@/services/listings'
 
 const bookings = ref<Booking[]>([])
@@ -8,6 +10,7 @@ const listings = ref<Listing[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 const busyIds = ref<number[]>([])
+const router = useRouter()
 
 const hostBookingIds = computed(() => new Set(listings.value.map((listing) => listing.id)))
 const hostBookings = computed(() =>
@@ -65,6 +68,17 @@ async function updateStatus(booking: Booking, action: 'confirm' | 'reject') {
   }
 }
 
+async function openConversation(booking: Booking) {
+  error.value = null
+
+  try {
+    const conversation = await createConversation(booking.listing_id)
+    await router.push(`/host/messages/${conversation.id}`)
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Impossible de créer la conversation.'
+  }
+}
+
 onMounted(load)
 </script>
 
@@ -114,17 +128,22 @@ onMounted(load)
               {{ statusLabel(booking.status) }}
             </span>
             <span class="text-xs text-slate-400">
-              Voyageur #{{ booking.guest_user_id }}
+              {{ booking.guest?.name ?? `Voyageur #${booking.guest_user_id}` }}
             </span>
           </div>
           <p class="mt-2">
             Du {{ booking.start_date }} au {{ booking.end_date }}
           </p>
-          <div
-            v-if="booking.status === 'pending'"
-            class="mt-4 flex flex-wrap items-center gap-2"
-          >
+          <div class="mt-4 flex flex-wrap items-center gap-2">
             <button
+              class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
+              type="button"
+              @click="openConversation(booking)"
+            >
+              Contacter le voyageur
+            </button>
+            <button
+              v-if="booking.status === 'pending'"
               class="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
               type="button"
               :disabled="busyIds.includes(booking.id)"
@@ -133,6 +152,7 @@ onMounted(load)
               Confirmer
             </button>
             <button
+              v-if="booking.status === 'pending'"
               class="rounded-full border border-rose-200 px-4 py-2 text-xs font-semibold text-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
               type="button"
               :disabled="busyIds.includes(booking.id)"

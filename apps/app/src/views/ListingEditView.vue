@@ -133,6 +133,8 @@ async function submit() {
       throw new Error('Annonce introuvable.')
     }
 
+    const existingImages = listing.value.images ? [...listing.value.images] : []
+
     const updated = await updateListing(listing.value.id, {
       title: form.value.title,
       description: form.value.description,
@@ -144,18 +146,29 @@ async function submit() {
       amenities: form.value.amenities,
     })
 
-    listing.value = updated
+    listing.value = {
+      ...updated,
+      images: existingImages,
+    }
 
     if (images.value.length > 0) {
       await uploadListingImages(listing.value.id, images.value.map((item) => item.file))
       images.value = []
     }
 
-    if (listing.value.images?.length) {
-      await reorderListingImages(
-        listing.value.id,
-        listing.value.images.sort((a, b) => a.position - b.position).map((image) => image.id)
-      )
+    const refreshed = await fetchListing(listing.value.id)
+    const orderedExistingIds = (listing.value.images ?? [])
+      .sort((a, b) => a.position - b.position)
+      .map((image) => image.id)
+    const orderedAllIds = [
+      ...orderedExistingIds,
+      ...((refreshed.images ?? [])
+        .filter((image) => !orderedExistingIds.includes(image.id))
+        .map((image) => image.id)),
+    ]
+
+    if (orderedAllIds.length > 0) {
+      await reorderListingImages(listing.value.id, orderedAllIds)
     }
 
     success.value = 'Annonce mise à jour.'

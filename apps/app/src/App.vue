@@ -81,9 +81,6 @@ onUnmounted(() => {
           <RouterLink to="/host/listings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
             Mes annonces
           </RouterLink>
-          <RouterLink to="/host/listings/new" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Nouvelle annonce
-          </RouterLink>
           <RouterLink to="/host/bookings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
             Réservations reçues
           </RouterLink>

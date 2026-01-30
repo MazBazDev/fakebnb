@@ -24,7 +24,7 @@ class BookingService
             ->pluck('listing_id');
 
         return Booking::query()
-            ->with('listing')
+            ->with(['listing', 'guest'])
             ->where('guest_user_id', $user->id)
             ->orWhereIn('listing_id', $hostListingIds)
             ->orWhereIn('listing_id', $cohostListingIds)
