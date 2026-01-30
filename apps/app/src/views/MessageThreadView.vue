@@ -15,7 +15,13 @@ const channelName = ref<string | null>(null)
 const threadRef = ref<HTMLDivElement | null>(null)
 const auth = useAuthStore()
 const currentUserId = computed(() => auth.user?.id ?? null)
-const messagesPath = computed(() => (route.meta.layout === 'host' ? '/host/bookings' : '/bookings'))
+const messagesPath = computed(() => {
+  if (route.meta.layout === 'host') {
+    const listingId = route.query.listing
+    return listingId ? `/host/listings/${listingId}/messages` : '/host/listings'
+  }
+  return '/messages'
+})
 
 async function load() {
   isLoading.value = true

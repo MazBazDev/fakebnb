@@ -73,7 +73,7 @@ async function openConversation(booking: Booking) {
 
   try {
     const conversation = await createConversation(booking.listing_id)
-    await router.push(`/host/messages/${conversation.id}`)
+    await router.push(`/host/messages/${conversation.id}?listing=${booking.listing_id}`)
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Impossible de créer la conversation.'
   }

@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Cohost;
+use App\Models\Conversation;
 
 class ListingResource extends JsonResource
 {
@@ -12,6 +13,7 @@ class ListingResource extends JsonResource
     {
         $user = $request->user();
         $canBook = true;
+        $conversationId = null;
         if ($user && $request->route()?->parameter('listing')) {
             $isHost = $this->host_user_id === $user->id;
             $isCohost = Cohost::query()
@@ -19,6 +21,11 @@ class ListingResource extends JsonResource
                 ->where('cohost_user_id', $user->id)
                 ->exists();
             $canBook = ! ($isHost || $isCohost);
+
+            $conversationId = Conversation::query()
+                ->where('listing_id', $this->id)
+                ->where('guest_user_id', $user->id)
+                ->value('id');
         }
 
         return [
@@ -40,6 +47,7 @@ class ListingResource extends JsonResource
             'rules' => $this->rules,
             'amenities' => $this->amenities ?? [],
             'can_book' => $request->route()?->parameter('listing') ? $canBook : null,
+            'conversation_id' => $request->route()?->parameter('listing') ? $conversationId : null,
             'images' => $this->whenLoaded('images', function () {
                 return $this->images->map(function ($image) {
                     return [

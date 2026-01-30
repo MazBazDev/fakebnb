@@ -93,6 +93,12 @@ onMounted(load)
             Voir le détail
           </RouterLink>
           <RouterLink
+            :to="`/host/listings/${listing.id}/messages`"
+            class="text-slate-600 hover:text-slate-900"
+          >
+            Messagerie
+          </RouterLink>
+          <RouterLink
             :to="`/host/listings/${listing.id}/edit`"
             class="text-slate-600 hover:text-slate-900"
           >

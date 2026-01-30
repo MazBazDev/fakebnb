@@ -454,7 +454,15 @@ async function contactHost() {
 
             <div class="mt-6 flex flex-wrap items-center gap-3">
               <button
-                v-if="listing.can_book !== false"
+                v-if="listing.conversation_id"
+                class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
+                type="button"
+                @click="router.push(`/messages/${listing.conversation_id}`)"
+              >
+                Reprendre la conversation
+              </button>
+              <button
+                v-else-if="listing.can_book !== false"
                 class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
                 type="button"
                 :disabled="isMessaging"

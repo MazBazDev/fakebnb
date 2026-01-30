@@ -186,6 +186,12 @@ onUnmounted(() => {
                     Profil
                   </RouterLink>
                   <RouterLink
+                    to="/messages"
+                    class="block rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  >
+                    Mes messages
+                  </RouterLink>
+                  <RouterLink
                     to="/host"
                     class="block rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                   >

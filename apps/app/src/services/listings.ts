@@ -17,6 +17,7 @@ export type Listing = {
   rules: string | null
   amenities?: string[]
   can_book?: boolean | null
+  conversation_id?: number | null
   images?: ListingImage[]
   created_at?: string | null
 }
