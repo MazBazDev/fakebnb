@@ -10,6 +10,17 @@ const router = createRouter({
       component: () => import('@/views/HomeView.vue'),
     },
     {
+      path: '/listings',
+      name: 'listings',
+      component: () => import('@/views/ListingsIndexView.vue'),
+    },
+    {
+      path: '/listings/:id',
+      name: 'listing-detail',
+      component: () => import('@/views/ListingDetailView.vue'),
+      props: true,
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
@@ -31,6 +42,12 @@ const router = createRouter({
       path: '/dashboard/cohosts',
       name: 'cohosts',
       component: () => import('@/views/CohostsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/dashboard/listings/new',
+      name: 'listing-create',
+      component: () => import('@/views/ListingCreateView.vue'),
       meta: { requiresAuth: true },
     },
     {

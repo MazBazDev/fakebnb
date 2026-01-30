@@ -74,5 +74,18 @@ async function activateHost() {
         Ouvrir
       </RouterLink>
     </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5">
+      <h2 class="text-sm font-semibold text-slate-700">Publier une annonce</h2>
+      <p class="mt-2 text-sm text-slate-500">
+        Crée une annonce et rends-la visible publiquement.
+      </p>
+      <RouterLink
+        to="/dashboard/listings/new"
+        class="mt-4 inline-flex rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
+      >
+        Nouveau listing
+      </RouterLink>
+    </div>
   </section>
 </template>

@@ -27,6 +27,9 @@ onMounted(async () => {
 
         <nav class="flex items-center gap-4 text-sm">
           <RouterLink to="/" class="text-slate-600 hover:text-slate-900">Accueil</RouterLink>
+          <RouterLink to="/listings" class="text-slate-600 hover:text-slate-900">
+            Annonces
+          </RouterLink>
           <RouterLink to="/dashboard" class="text-slate-600 hover:text-slate-900">
             Dashboard
           </RouterLink>
