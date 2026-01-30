@@ -67,4 +67,19 @@ class User extends Authenticatable
     {
         return $this->hasMany(Cohost::class, 'cohost_user_id');
     }
+
+    public function hostedConversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'host_user_id');
+    }
+
+    public function guestConversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'guest_user_id');
+    }
+
+    public function sentMessages(): HasMany
+    {
+        return $this->hasMany(Message::class, 'sender_user_id');
+    }
 }

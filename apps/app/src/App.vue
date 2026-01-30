@@ -33,6 +33,9 @@ onMounted(async () => {
           <RouterLink to="/bookings" class="text-slate-600 hover:text-slate-900">
             Réservations
           </RouterLink>
+          <RouterLink to="/messages" class="text-slate-600 hover:text-slate-900">
+            Messages
+          </RouterLink>
           <RouterLink to="/dashboard" class="text-slate-600 hover:text-slate-900">
             Dashboard
           </RouterLink>

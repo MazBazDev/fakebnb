@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
+import { useRoute, RouterLink, useRouter } from 'vue-router'
 import { fetchListing, type Listing } from '@/services/listings'
 import { createBooking } from '@/services/bookings'
+import { createConversation } from '@/services/conversations'
 
 const route = useRoute()
+const router = useRouter()
 const listing = ref<Listing | null>(null)
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 const bookingError = ref<string | null>(null)
 const bookingSuccess = ref<string | null>(null)
 const isSubmitting = ref(false)
+const messageError = ref<string | null>(null)
+const isMessaging = ref(false)
 const bookingForm = ref({
   start_date: '',
   end_date: '',
@@ -55,6 +59,25 @@ async function submitBooking() {
     isSubmitting.value = false
   }
 }
+
+async function contactHost() {
+  messageError.value = null
+  isMessaging.value = true
+
+  try {
+    if (!listing.value) {
+      throw new Error('Annonce introuvable.')
+    }
+
+    const conversation = await createConversation(listing.value.id)
+    await router.push(`/messages/${conversation.id}`)
+  } catch (err) {
+    messageError.value =
+      err instanceof Error ? err.message : 'Impossible d’ouvrir la conversation.'
+  } finally {
+    isMessaging.value = false
+  }
+}
 </script>
 
 <template>
@@ -94,6 +117,18 @@ async function submitBooking() {
         <div v-if="listing.rules" class="mt-6 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Règles</p>
           <p class="mt-2">{{ listing.rules }}</p>
+        </div>
+
+        <div class="mt-6 flex flex-wrap items-center gap-3">
+          <button
+            class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
+            type="button"
+            :disabled="isMessaging"
+            @click="contactHost"
+          >
+            {{ isMessaging ? 'Ouverture...' : 'Contacter l’hôte' }}
+          </button>
+          <p v-if="messageError" class="text-xs text-rose-600">{{ messageError }}</p>
         </div>
       </div>
 

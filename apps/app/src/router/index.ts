@@ -27,6 +27,19 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/messages',
+      name: 'messages',
+      component: () => import('@/views/MessagesView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/messages/:id',
+      name: 'message-thread',
+      component: () => import('@/views/MessageThreadView.vue'),
+      meta: { requiresAuth: true },
+      props: true,
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),

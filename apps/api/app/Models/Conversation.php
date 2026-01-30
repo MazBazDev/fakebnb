@@ -6,30 +6,31 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Listing extends Model
+class Conversation extends Model
 {
     protected $fillable = [
+        'listing_id',
         'host_user_id',
-        'title',
-        'description',
-        'city',
-        'address',
-        'price_per_night',
-        'rules',
+        'guest_user_id',
     ];
+
+    public function listing(): BelongsTo
+    {
+        return $this->belongsTo(Listing::class);
+    }
 
     public function host(): BelongsTo
     {
         return $this->belongsTo(User::class, 'host_user_id');
     }
 
-    public function bookings(): HasMany
+    public function guest(): BelongsTo
     {
-        return $this->hasMany(Booking::class);
+        return $this->belongsTo(User::class, 'guest_user_id');
     }
 
-    public function conversations(): HasMany
+    public function messages(): HasMany
     {
-        return $this->hasMany(Conversation::class);
+        return $this->hasMany(Message::class);
     }
 }
