@@ -6,6 +6,8 @@ export type User = {
   id: number
   name: string
   email: string
+  address?: string | null
+  profile_photo_url?: string | null
 }
 
 const TOKEN_KEY = 'auth.token'
