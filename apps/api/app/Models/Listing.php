@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Listing extends Model
 {
@@ -20,5 +21,10 @@ class Listing extends Model
     public function host(): BelongsTo
     {
         return $this->belongsTo(User::class, 'host_user_id');
+    }
+
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
     }
 }

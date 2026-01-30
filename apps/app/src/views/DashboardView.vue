@@ -87,5 +87,18 @@ async function activateHost() {
         Nouveau listing
       </RouterLink>
     </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5">
+      <h2 class="text-sm font-semibold text-slate-700">Réservations</h2>
+      <p class="mt-2 text-sm text-slate-500">
+        Consulte et crée des réservations pour les annonces.
+      </p>
+      <RouterLink
+        to="/bookings"
+        class="mt-4 inline-flex rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
+      >
+        Gérer les réservations
+      </RouterLink>
+    </div>
   </section>
 </template>

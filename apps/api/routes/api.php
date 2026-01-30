@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CohostController;
+use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\ListingController;
 use App\Http\Controllers\Api\V1\MeController;
 use Illuminate\Http\Request;
@@ -24,6 +25,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/me/host', [MeController::class, 'becomeHost']);
+
+        Route::get('/bookings', [BookingController::class, 'index']);
+        Route::post('/bookings', [BookingController::class, 'store']);
 
         Route::post('/listings', [ListingController::class, 'store']);
         Route::patch('/listings/{listing}', [ListingController::class, 'update']);
