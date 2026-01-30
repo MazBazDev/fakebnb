@@ -9,7 +9,10 @@ class RoleService
 {
     public function assignRole(User $user, string $roleName): void
     {
-        $role = Role::where('name', $roleName)->firstOrFail();
+        $role = Role::firstOrCreate(
+            ['name' => $roleName],
+            ['label' => ucfirst($roleName)]
+        );
 
         $user->roles()->syncWithoutDetaching([$role->id]);
     }
