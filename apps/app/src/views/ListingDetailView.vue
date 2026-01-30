@@ -2,11 +2,19 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { fetchListing, type Listing } from '@/services/listings'
+import { createBooking } from '@/services/bookings'
 
 const route = useRoute()
 const listing = ref<Listing | null>(null)
 const isLoading = ref(false)
 const error = ref<string | null>(null)
+const bookingError = ref<string | null>(null)
+const bookingSuccess = ref<string | null>(null)
+const isSubmitting = ref(false)
+const bookingForm = ref({
+  start_date: '',
+  end_date: '',
+})
 
 async function load() {
   isLoading.value = true
@@ -23,6 +31,30 @@ async function load() {
 }
 
 onMounted(load)
+
+async function submitBooking() {
+  bookingError.value = null
+  bookingSuccess.value = null
+  isSubmitting.value = true
+
+  try {
+    if (!listing.value) {
+      throw new Error('Annonce introuvable.')
+    }
+
+    await createBooking({
+      listing_id: listing.value.id,
+      start_date: bookingForm.value.start_date,
+      end_date: bookingForm.value.end_date,
+    })
+    bookingSuccess.value = 'Réservation confirmée.'
+    bookingForm.value = { start_date: '', end_date: '' }
+  } catch (err) {
+    bookingError.value = err instanceof Error ? err.message : 'Impossible de réserver.'
+  } finally {
+    isSubmitting.value = false
+  }
+}
 </script>
 
 <template>
@@ -64,6 +96,54 @@ onMounted(load)
           <p class="mt-2">{{ listing.rules }}</p>
         </div>
       </div>
+
+      <form
+        class="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+        @submit.prevent="submitBooking"
+      >
+        <h2 class="text-sm font-semibold text-slate-700">Réserver ce logement</h2>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-slate-700">Arrivée</label>
+            <input
+              v-model="bookingForm.start_date"
+              type="date"
+              class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
+              required
+            />
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-slate-700">Départ</label>
+            <input
+              v-model="bookingForm.end_date"
+              type="date"
+              class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
+              required
+            />
+          </div>
+        </div>
+
+        <div
+          v-if="bookingError"
+          class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600"
+        >
+          {{ bookingError }}
+        </div>
+        <div
+          v-if="bookingSuccess"
+          class="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-600"
+        >
+          {{ bookingSuccess }}
+        </div>
+
+        <button
+          class="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          :disabled="isSubmitting"
+          type="submit"
+        >
+          {{ isSubmitting ? 'Réservation...' : 'Réserver' }}
+        </button>
+      </form>
     </div>
   </section>
 </template>
