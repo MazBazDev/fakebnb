@@ -13,7 +13,10 @@ class CohostController extends Controller
 {
     public function index(Request $request, CohostService $cohostService)
     {
-        $cohosts = $cohostService->listForHost($request->user());
+        $cohosts = $cohostService->listForHost(
+            $request->user(),
+            $request->integer('listing_id')
+        );
 
         return response()->json($cohosts);
     }

@@ -13,6 +13,15 @@ class ListingService
         return Listing::query()->with('images')->latest()->get();
     }
 
+    public function listForHost(User $user)
+    {
+        return Listing::query()
+            ->with('images')
+            ->where('host_user_id', $user->id)
+            ->latest()
+            ->get();
+    }
+
     public function create(User $host, array $data): Listing
     {
         Gate::authorize('create', Listing::class);

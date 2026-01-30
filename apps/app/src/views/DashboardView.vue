@@ -89,6 +89,19 @@ async function activateHost() {
     </div>
 
     <div class="rounded-2xl border border-slate-200 bg-white p-5">
+      <h2 class="text-sm font-semibold text-slate-700">Mes annonces</h2>
+      <p class="mt-2 text-sm text-slate-500">
+        Consulte et gère les annonces que tu as publiées.
+      </p>
+      <RouterLink
+        to="/dashboard/listings"
+        class="mt-4 inline-flex rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
+      >
+        Voir mes annonces
+      </RouterLink>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5">
       <h2 class="text-sm font-semibold text-slate-700">Réservations</h2>
       <p class="mt-2 text-sm text-slate-500">
         Consulte et crée des réservations pour les annonces.

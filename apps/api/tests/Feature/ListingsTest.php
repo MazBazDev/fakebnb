@@ -125,6 +125,7 @@ it('allows cohost with permission to update listing', function () {
     Cohost::create([
         'host_user_id' => $host->id,
         'cohost_user_id' => $cohost->id,
+        'listing_id' => $listing->id,
         'can_edit_listings' => true,
     ]);
     $headers = authHeaderFor($cohost, 'listing-cohost-update');
@@ -154,6 +155,7 @@ it('prevents cohost without permission from updating listing', function () {
     Cohost::create([
         'host_user_id' => $host->id,
         'cohost_user_id' => $cohost->id,
+        'listing_id' => $listing->id,
         'can_edit_listings' => false,
     ]);
     $headers = authHeaderFor($cohost, 'listing-cohost-deny');

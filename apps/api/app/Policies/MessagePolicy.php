@@ -20,7 +20,7 @@ class MessagePolicy
         }
 
         return $user->cohostedBy()
-            ->where('host_user_id', $conversation->host_user_id)
+            ->where('listing_id', $conversation->listing_id)
             ->where('can_reply_messages', true)
             ->exists();
     }

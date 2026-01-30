@@ -16,10 +16,12 @@ export type Cohost = {
   id: number
   host_user_id: number
   cohost_user_id: number
+  listing_id: number
   can_read_conversations: boolean
   can_reply_messages: boolean
   can_edit_listings: boolean
   cohost?: CohostUser
+  listing?: { id: number; title: string; city: string }
 }
 
 export function fetchCohosts() {
@@ -27,7 +29,8 @@ export function fetchCohosts() {
 }
 
 export function createCohost(payload: {
-  cohost_user_id: number
+  listing_id: number
+  cohost_email: string
   can_read_conversations?: boolean
   can_reply_messages?: boolean
   can_edit_listings?: boolean

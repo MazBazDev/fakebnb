@@ -17,13 +17,9 @@ class BookingService
             ->where('host_user_id', $user->id)
             ->pluck('id');
 
-        $cohostListingIds = Listing::query()
-            ->whereIn('host_user_id', function ($query) use ($user) {
-                $query->select('host_user_id')
-                    ->from('cohosts')
-                    ->where('cohost_user_id', $user->id);
-            })
-            ->pluck('id');
+        $cohostListingIds = \App\Models\Cohost::query()
+            ->where('cohost_user_id', $user->id)
+            ->pluck('listing_id');
 
         return Booking::query()
             ->with('listing')

@@ -25,7 +25,7 @@ Broadcast::channel('conversation.{conversationId}', function ($user, $conversati
     }
 
     return $user->cohostedBy()
-        ->where('host_user_id', $conversation->host_user_id)
+        ->where('listing_id', $conversation->listing_id)
         ->where('can_read_conversations', true)
         ->exists();
 });

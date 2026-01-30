@@ -14,15 +14,15 @@ class ConversationService
     {
         Gate::authorize('viewAny', Conversation::class);
 
-        $cohostHostIds = $user->cohostedBy()
+        $cohostListingIds = $user->cohostedBy()
             ->where('can_read_conversations', true)
-            ->pluck('host_user_id');
+            ->pluck('listing_id');
 
         return Conversation::query()
             ->with(['listing', 'messages'])
             ->where('host_user_id', $user->id)
             ->orWhere('guest_user_id', $user->id)
-            ->orWhereIn('host_user_id', $cohostHostIds)
+            ->orWhereIn('listing_id', $cohostListingIds)
             ->latest()
             ->get();
     }

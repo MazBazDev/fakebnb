@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Profile\UpdateProfileRequest;
 use App\Services\ProfileService;
 use App\Services\RoleService;
+use App\Services\ListingService;
 use Illuminate\Http\Request;
 
 class MeController extends Controller
@@ -28,5 +29,12 @@ class MeController extends Controller
         );
 
         return response()->json($user);
+    }
+
+    public function myListings(Request $request, ListingService $listingService)
+    {
+        return \App\Http\Resources\ListingResource::collection(
+            $listingService->listForHost($request->user())
+        );
     }
 }

@@ -29,6 +29,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/me/host', [MeController::class, 'becomeHost']);
         Route::patch('/me/profile', [MeController::class, 'updateProfile']);
+        Route::get('/me/listings', [MeController::class, 'myListings']);
 
         Route::get('/bookings', [BookingController::class, 'index']);
         Route::post('/bookings', [BookingController::class, 'store']);

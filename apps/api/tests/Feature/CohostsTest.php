@@ -2,6 +2,7 @@
 
 use App\Models\ApiToken;
 use App\Models\Cohost;
+use App\Models\Listing;
 use App\Models\Role;
 use App\Models\User;
 
@@ -24,6 +25,18 @@ function makeHost(): User
     return $user;
 }
 
+function makeListing(User $host): Listing
+{
+    return Listing::create([
+        'host_user_id' => $host->id,
+        'title' => 'Appartement',
+        'description' => 'Centre-ville',
+        'city' => 'Paris',
+        'address' => '10 rue de Paris',
+        'price_per_night' => 120,
+    ]);
+}
+
 it('forbids non-host users from listing cohosts', function () {
     $user = User::factory()->create();
     $headers = authHeaderForUser($user, 'cohosts-non-host');
@@ -35,10 +48,12 @@ it('forbids non-host users from listing cohosts', function () {
 
 it('allows a host to list their cohosts', function () {
     $host = makeHost();
+    $listing = makeListing($host);
     $cohostUser = User::factory()->create();
     Cohost::create([
         'host_user_id' => $host->id,
         'cohost_user_id' => $cohostUser->id,
+        'listing_id' => $listing->id,
         'can_read_conversations' => true,
     ]);
 
@@ -51,11 +66,13 @@ it('allows a host to list their cohosts', function () {
 
 it('allows a host to create a cohost with permissions', function () {
     $host = makeHost();
+    $listing = makeListing($host);
     $cohostUser = User::factory()->create();
     $headers = authHeaderForUser($host, 'cohosts-create');
 
     $response = $this->postJson('/api/v1/cohosts', [
-        'cohost_user_id' => $cohostUser->id,
+        'listing_id' => $listing->id,
+        'cohost_email' => $cohostUser->email,
         'can_read_conversations' => true,
         'can_reply_messages' => true,
         'can_edit_listings' => false,
@@ -67,6 +84,7 @@ it('allows a host to create a cohost with permissions', function () {
     $this->assertDatabaseHas('cohosts', [
         'host_user_id' => $host->id,
         'cohost_user_id' => $cohostUser->id,
+        'listing_id' => $listing->id,
         'can_read_conversations' => true,
         'can_reply_messages' => true,
         'can_edit_listings' => false,
@@ -75,10 +93,12 @@ it('allows a host to create a cohost with permissions', function () {
 
 it('prevents a host from adding themselves as cohost', function () {
     $host = makeHost();
+    $listing = makeListing($host);
     $headers = authHeaderForUser($host, 'cohosts-self');
 
     $response = $this->postJson('/api/v1/cohosts', [
-        'cohost_user_id' => $host->id,
+        'listing_id' => $listing->id,
+        'cohost_email' => $host->email,
         'can_read_conversations' => true,
     ], $headers);
 
@@ -87,10 +107,12 @@ it('prevents a host from adding themselves as cohost', function () {
 
 it('allows a host to update cohost permissions', function () {
     $host = makeHost();
+    $listing = makeListing($host);
     $cohostUser = User::factory()->create();
     $cohost = Cohost::create([
         'host_user_id' => $host->id,
         'cohost_user_id' => $cohostUser->id,
+        'listing_id' => $listing->id,
         'can_edit_listings' => false,
     ]);
     $headers = authHeaderForUser($host, 'cohosts-update');
@@ -106,10 +128,12 @@ it('allows a host to update cohost permissions', function () {
 it('forbids updating cohost owned by another host', function () {
     $host = makeHost();
     $otherHost = makeHost();
+    $listing = makeListing($otherHost);
     $cohostUser = User::factory()->create();
     $cohost = Cohost::create([
         'host_user_id' => $otherHost->id,
         'cohost_user_id' => $cohostUser->id,
+        'listing_id' => $listing->id,
         'can_edit_listings' => false,
     ]);
     $headers = authHeaderForUser($host, 'cohosts-update-deny');
@@ -123,10 +147,12 @@ it('forbids updating cohost owned by another host', function () {
 
 it('allows a host to delete a cohost', function () {
     $host = makeHost();
+    $listing = makeListing($host);
     $cohostUser = User::factory()->create();
     $cohost = Cohost::create([
         'host_user_id' => $host->id,
         'cohost_user_id' => $cohostUser->id,
+        'listing_id' => $listing->id,
         'can_edit_listings' => false,
     ]);
     $headers = authHeaderForUser($host, 'cohosts-delete');

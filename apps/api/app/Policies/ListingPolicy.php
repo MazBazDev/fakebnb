@@ -30,7 +30,7 @@ class ListingPolicy
         }
 
         return Cohost::query()
-            ->where('host_user_id', $listing->host_user_id)
+            ->where('listing_id', $listing->id)
             ->where('cohost_user_id', $user->id)
             ->where('can_edit_listings', true)
             ->exists();

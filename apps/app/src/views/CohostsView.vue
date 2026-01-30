@@ -7,13 +7,16 @@ import {
   updateCohost,
   type Cohost,
 } from '@/services/cohosts'
+import { fetchMyListings, type Listing } from '@/services/listings'
 
 const cohosts = ref<Cohost[]>([])
+const listings = ref<Listing[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 const creating = ref(false)
 const form = ref({
-  cohost_user_id: '',
+  listing_id: '',
+  cohost_email: '',
   can_read_conversations: false,
   can_reply_messages: false,
   can_edit_listings: false,
@@ -24,7 +27,9 @@ async function load() {
   error.value = null
 
   try {
-    cohosts.value = await fetchCohosts()
+    const [cohostsData, listingsData] = await Promise.all([fetchCohosts(), fetchMyListings()])
+    cohosts.value = cohostsData
+    listings.value = listingsData
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Impossible de charger les co-hôtes.'
   } finally {
@@ -38,14 +43,16 @@ async function submit() {
 
   try {
     const created = await createCohost({
-      cohost_user_id: Number(form.value.cohost_user_id),
+      listing_id: Number(form.value.listing_id),
+      cohost_email: form.value.cohost_email,
       can_read_conversations: form.value.can_read_conversations,
       can_reply_messages: form.value.can_reply_messages,
       can_edit_listings: form.value.can_edit_listings,
     })
     cohosts.value = [created, ...cohosts.value]
     form.value = {
-      cohost_user_id: '',
+      listing_id: '',
+      cohost_email: '',
       can_read_conversations: false,
       can_reply_messages: false,
       can_edit_listings: false,
@@ -91,7 +98,7 @@ onMounted(load)
       <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Co-hôtes</p>
       <h1 class="text-3xl font-semibold text-slate-900">Gérer les délégations</h1>
       <p class="text-sm text-slate-500">
-        Ajoute un co-hôte par ID utilisateur et configure ses permissions.
+        Ajoute un co-hôte par email et configure ses permissions par annonce.
       </p>
     </header>
 
@@ -100,13 +107,25 @@ onMounted(load)
         class="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
         @submit.prevent="submit"
       >
-        <div>
-          <label class="text-sm font-medium text-slate-700">ID utilisateur</label>
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-slate-700">Annonce</label>
+          <select
+            v-model="form.listing_id"
+            class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
+            required
+          >
+            <option value="" disabled>Choisir une annonce</option>
+            <option v-for="listing in listings" :key="listing.id" :value="listing.id">
+              {{ listing.title }} — {{ listing.city }}
+            </option>
+          </select>
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-slate-700">Email du co-hôte</label>
           <input
-            v-model="form.cohost_user_id"
-            type="number"
-            min="1"
-            class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
+            v-model="form.cohost_email"
+            type="email"
+            class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
             required
           />
         </div>
@@ -167,6 +186,9 @@ onMounted(load)
                   {{ cohost.cohost?.name ?? 'Utilisateur #' + cohost.cohost_user_id }}
                 </p>
                 <p class="text-xs text-slate-500">{{ cohost.cohost?.email }}</p>
+                <p class="text-xs text-slate-400">
+                  {{ cohost.listing?.title ?? 'Annonce #' + cohost.listing_id }}
+                </p>
               </div>
               <button
                 class="text-xs font-semibold text-rose-600 hover:text-rose-700"

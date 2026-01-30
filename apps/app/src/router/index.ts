@@ -76,6 +76,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/dashboard/listings',
+      name: 'my-listings',
+      component: () => import('@/views/MyListingsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/views/NotFoundView.vue'),

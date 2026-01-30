@@ -32,6 +32,11 @@ export async function fetchListing(id: number) {
   return response.data
 }
 
+export async function fetchMyListings() {
+  const response = await apiFetch<ListingsResponse>('/me/listings')
+  return response.data
+}
+
 export async function createListing(
   payload: Omit<Listing, 'id' | 'host_user_id' | 'created_at' | 'images'>
 ) {
