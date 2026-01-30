@@ -27,12 +27,6 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/messages',
-      name: 'messages',
-      component: () => import('@/views/MessagesView.vue'),
-      meta: { requiresAuth: true },
-    },
-    {
       path: '/messages/:id',
       name: 'message-thread',
       component: () => import('@/views/MessageThreadView.vue'),
@@ -96,12 +90,6 @@ const router = createRouter({
       path: '/host/bookings',
       name: 'host-bookings',
       component: () => import('@/views/HostBookingsView.vue'),
-      meta: { requiresAuth: true, layout: 'host' },
-    },
-    {
-      path: '/host/messages',
-      name: 'host-messages',
-      component: () => import('@/views/MessagesView.vue'),
       meta: { requiresAuth: true, layout: 'host' },
     },
     {

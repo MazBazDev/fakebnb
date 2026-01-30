@@ -87,9 +87,6 @@ onUnmounted(() => {
           <RouterLink to="/host/cohosts" class="rounded-xl px-3 py-2 hover:bg-slate-50">
             Co-hôtes
           </RouterLink>
-          <RouterLink to="/host/messages" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Messages hôte
-          </RouterLink>
           <RouterLink to="/listings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
             Retour au mode voyageur
           </RouterLink>
@@ -200,12 +197,6 @@ onUnmounted(() => {
                   >
                     Historique
                   </RouterLink>
-                  <RouterLink
-                    to="/messages"
-                    class="block rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                  >
-                    Mes messages
-                  </RouterLink>
                   <button
                     class="mt-1 w-full rounded-xl px-3 py-2 text-left text-rose-600 hover:bg-rose-50"
                     type="button"
@@ -255,9 +246,6 @@ onUnmounted(() => {
           </RouterLink>
           <RouterLink to="/host/cohosts" class="rounded-xl px-3 py-2 hover:bg-slate-50">
             Co-hôtes
-          </RouterLink>
-          <RouterLink to="/host/messages" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Messages hôte
           </RouterLink>
           <RouterLink to="/listings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
             Retour au mode voyageur

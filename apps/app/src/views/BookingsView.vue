@@ -2,13 +2,17 @@
 import { computed, onMounted, ref } from 'vue'
 import { fetchBookings, type Booking } from '@/services/bookings'
 import { fetchListings, type Listing } from '@/services/listings'
+import { createConversation } from '@/services/conversations'
 import { useAuthStore } from '@/stores/auth'
+import { useRouter, RouterLink } from 'vue-router'
 
 const auth = useAuthStore()
+const router = useRouter()
 const bookings = ref<Booking[]>([])
 const listings = ref<Listing[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
+const contactError = ref<string | null>(null)
 const travelerBookings = computed(() =>
   bookings.value.filter((booking) => booking.guest_user_id === auth.user?.id)
 )
@@ -33,6 +37,10 @@ function listingLabel(listingId: number) {
   return listing ? `${listing.title} — ${listing.city}` : `Annonce #${listingId}`
 }
 
+function listingFor(booking: Booking) {
+  return listings.value.find((item) => item.id === booking.listing_id)
+}
+
 function statusLabel(status: Booking['status']) {
   if (status === 'confirmed') return 'Confirmée'
   if (status === 'rejected') return 'Refusée'
@@ -45,21 +53,39 @@ function statusClass(status: Booking['status']) {
   return 'bg-amber-50 text-amber-600 border-amber-100'
 }
 
+function isActiveOrFuture(booking: Booking) {
+  const today = new Date()
+  const todayValue = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
+  const end = new Date(booking.end_date)
+  return end >= todayValue
+}
+
+async function contactHost(booking: Booking) {
+  contactError.value = null
+
+  try {
+    const conversation = await createConversation(booking.listing_id)
+    await router.push(`/messages/${conversation.id}`)
+  } catch (err) {
+    contactError.value = err instanceof Error ? err.message : 'Impossible de contacter l’hôte.'
+  }
+}
+
 onMounted(load)
 </script>
 
 <template>
   <section class="space-y-8">
     <header class="space-y-2">
-      <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Réservations</p>
-      <h1 class="text-3xl font-semibold text-slate-900">Historique des réservations</h1>
+      <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Mes réservations</p>
+      <h1 class="text-3xl font-semibold text-slate-900">Mes réservations</h1>
       <p class="text-sm text-slate-500">
-        Consulte les réservations effectuées ou reçues.
+        Retrouve le détail de tes séjours et contacte ton hôte si besoin.
       </p>
     </header>
 
     <div class="space-y-3">
-      <h2 class="text-sm font-semibold text-slate-700">Réservations effectuées</h2>
+      <h2 class="text-sm font-semibold text-slate-700">Toutes mes réservations</h2>
       <div
         v-if="isLoading"
         class="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500"
@@ -72,33 +98,66 @@ onMounted(load)
       >
         Aucune réservation enregistrée.
       </div>
-      <div v-else class="space-y-2">
+      <div v-else class="grid gap-4 lg:grid-cols-2">
         <article
           v-for="booking in travelerBookings"
           :key="booking.id"
-          class="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600"
+          class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
         >
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <span class="font-semibold text-slate-800">
-              {{ listingLabel(booking.listing_id) }}
-            </span>
-            <span class="text-xs uppercase tracking-[0.2em] text-slate-400">
-              #{{ booking.id }}
-            </span>
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Réservation</p>
+              <p class="text-lg font-semibold text-slate-900">
+                {{ listingLabel(booking.listing_id) }}
+              </p>
+            </div>
+            <span class="text-xs uppercase tracking-[0.2em] text-slate-400">#{{ booking.id }}</span>
           </div>
-          <div class="mt-2">
+
+          <div class="mt-3 flex flex-wrap items-center gap-2">
             <span
               class="rounded-full border px-3 py-1 text-xs font-semibold"
               :class="statusClass(booking.status)"
             >
               {{ statusLabel(booking.status) }}
             </span>
+            <span class="text-xs text-slate-500">
+              Du {{ booking.start_date }} au {{ booking.end_date }}
+            </span>
           </div>
-          <p class="mt-2">
-            Du {{ booking.start_date }} au {{ booking.end_date }}
-          </p>
+
+          <div class="mt-4 flex flex-wrap items-center gap-3">
+            <RouterLink
+              :to="`/listings/${booking.listing_id}`"
+              class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
+            >
+              Voir le logement
+            </RouterLink>
+            <button
+              v-if="isActiveOrFuture(booking)"
+              class="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white"
+              type="button"
+              @click="contactHost(booking)"
+            >
+              Contacter l’hôte
+            </button>
+            <span v-else class="text-xs text-slate-400">
+              Contact disponible avant et pendant le séjour
+            </span>
+          </div>
+
+          <div v-if="listingFor(booking)?.images?.length" class="mt-4 overflow-hidden rounded-2xl">
+            <img
+              :src="listingFor(booking)?.images?.[0].url"
+              class="h-40 w-full object-cover"
+              alt=""
+            />
+          </div>
         </article>
       </div>
+      <p v-if="contactError" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
+        {{ contactError }}
+      </p>
     </div>
   </section>
 </template>
