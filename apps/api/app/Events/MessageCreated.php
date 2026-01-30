@@ -23,6 +23,11 @@ class MessageCreated implements ShouldBroadcastNow
         ];
     }
 
+    public function broadcastAs(): string
+    {
+        return 'MessageCreated';
+    }
+
     public function broadcastWith(): array
     {
         return [
