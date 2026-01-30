@@ -38,4 +38,11 @@ class BookingController extends Controller
 
         return BookingResource::make($booking);
     }
+
+    public function cancel(Request $request, Booking $booking, BookingService $bookingService)
+    {
+        $booking = $bookingService->cancel($request->user(), $booking->loadMissing('payment'));
+
+        return BookingResource::make($booking);
+    }
 }

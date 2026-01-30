@@ -98,6 +98,58 @@ it('returns bookings for guest or host', function () {
         ->assertJsonPath('data.0.id', $booking->id);
 });
 
+it('allows guest to cancel a booking and refunds when paid', function () {
+    [$host, $listing] = hostWithListing();
+    $guest = User::factory()->create();
+    $booking = Booking::create([
+        'listing_id' => $listing->id,
+        'guest_user_id' => $guest->id,
+        'start_date' => now()->addDays(3)->toDateString(),
+        'end_date' => now()->addDays(6)->toDateString(),
+        'status' => 'confirmed',
+    ]);
+
+    \App\Models\Payment::create([
+        'booking_id' => $booking->id,
+        'guest_user_id' => $guest->id,
+        'host_user_id' => $host->id,
+        'amount_total' => 300,
+        'amount_base' => 250,
+        'amount_vat' => 30,
+        'amount_service' => 20,
+        'commission_amount' => 30,
+        'payout_amount' => 220,
+        'status' => 'captured',
+    ]);
+
+    $headers = authHeaderForBooking($guest, 'booking-cancel');
+
+    $response = $this->postJson("/api/v1/bookings/{$booking->id}/cancel", [], $headers);
+
+    $response->assertOk()
+        ->assertJsonPath('data.status', 'cancelled')
+        ->assertJsonPath('data.payment.status', 'refunded');
+});
+
+it('allows host to cancel a booking', function () {
+    [$host, $listing] = hostWithListing();
+    $guest = User::factory()->create();
+    $booking = Booking::create([
+        'listing_id' => $listing->id,
+        'guest_user_id' => $guest->id,
+        'start_date' => now()->addDays(3)->toDateString(),
+        'end_date' => now()->addDays(6)->toDateString(),
+        'status' => 'confirmed',
+    ]);
+
+    $headers = authHeaderForBooking($host, 'booking-cancel-host');
+
+    $response = $this->postJson("/api/v1/bookings/{$booking->id}/cancel", [], $headers);
+
+    $response->assertOk()
+        ->assertJsonPath('data.status', 'cancelled');
+});
+
 it('prevents host from booking their own listing', function () {
     [$host, $listing] = hostWithListing();
     $headers = authHeaderForBooking($host, 'booking-host-own');

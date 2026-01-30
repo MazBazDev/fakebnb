@@ -11,7 +11,19 @@ export type Booking = {
   }
   start_date: string
   end_date: string
-  status: 'pending' | 'confirmed' | 'rejected'
+  status: 'pending' | 'awaiting_payment' | 'confirmed' | 'rejected' | 'completed' | 'cancelled'
+  paid_at?: string | null
+  completed_at?: string | null
+  payment?: {
+    id: number
+    status: 'requires_authorization' | 'authorized' | 'captured' | 'failed' | 'refunded'
+    amount_total: number
+    amount_base: number
+    amount_vat: number
+    amount_service: number
+    commission_amount: number
+    payout_amount: number
+  } | null
   created_at?: string | null
 }
 
@@ -31,6 +43,13 @@ export async function createBooking(payload: {
   const response = await apiFetch<BookingResponse>('/bookings', {
     method: 'POST',
     body: JSON.stringify(payload),
+  })
+  return response.data
+}
+
+export async function cancelBooking(id: number) {
+  const response = await apiFetch<BookingResponse>(`/bookings/${id}/cancel`, {
+    method: 'POST',
   })
   return response.data
 }

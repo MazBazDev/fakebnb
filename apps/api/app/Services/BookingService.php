@@ -24,7 +24,7 @@ class BookingService
             ->pluck('listing_id');
 
         return Booking::query()
-            ->with(['listing', 'guest'])
+            ->with(['listing', 'guest', 'payment'])
             ->where('guest_user_id', $user->id)
             ->orWhereIn('listing_id', $hostListingIds)
             ->orWhereIn('listing_id', $cohostListingIds)
@@ -83,6 +83,10 @@ class BookingService
     {
         Gate::authorize('confirm', $booking);
 
+        if ($booking->status !== 'pending') {
+            return $booking;
+        }
+
         $hasConflict = Booking::query()
             ->where('listing_id', $booking->listing_id)
             ->where('status', 'confirmed')
@@ -95,7 +99,7 @@ class BookingService
             throw new ConflictHttpException('Dates indisponibles.');
         }
 
-        $booking->status = 'confirmed';
+        $booking->status = 'awaiting_payment';
         $booking->save();
 
         return $booking->fresh();
@@ -109,5 +113,26 @@ class BookingService
         $booking->save();
 
         return $booking->fresh();
+    }
+
+    public function cancel(User $guest, Booking $booking): Booking
+    {
+        Gate::authorize('cancel', $booking);
+
+        if (in_array($booking->status, ['cancelled', 'completed'], true)) {
+            return $booking;
+        }
+
+        $booking->status = 'cancelled';
+        $booking->save();
+
+        $payment = $booking->payment;
+        if ($payment && in_array($payment->status, ['authorized', 'captured'], true)) {
+            $payment->status = 'refunded';
+            $payment->refunded_at = now();
+            $payment->save();
+        }
+
+        return $booking->fresh()->load('payment');
     }
 }

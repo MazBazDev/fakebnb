@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { confirmBooking, fetchBookings, rejectBooking, type Booking } from '@/services/bookings'
+import { cancelBooking, confirmBooking, fetchBookings, rejectBooking, type Booking } from '@/services/bookings'
 import { createConversation } from '@/services/conversations'
 import { useRouter } from 'vue-router'
 import { fetchMyListings, type Listing } from '@/services/listings'
@@ -10,6 +10,8 @@ const listings = ref<Listing[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 const busyIds = ref<number[]>([])
+const cancelBusy = ref<number[]>([])
+const cancelError = ref<string | null>(null)
 const router = useRouter()
 
 const hostBookingIds = computed(() => new Set(listings.value.map((listing) => listing.id)))
@@ -42,12 +44,18 @@ function listingLabel(listingId: number) {
 
 function statusLabel(status: Booking['status']) {
   if (status === 'confirmed') return 'Confirmée'
+  if (status === 'awaiting_payment') return 'Paiement requis'
+  if (status === 'completed') return 'Terminée'
+  if (status === 'cancelled') return 'Annulée'
   if (status === 'rejected') return 'Refusée'
   return 'En attente'
 }
 
 function statusClass(status: Booking['status']) {
   if (status === 'confirmed') return 'bg-emerald-50 text-emerald-600 border-emerald-100'
+  if (status === 'awaiting_payment') return 'bg-amber-50 text-amber-600 border-amber-100'
+  if (status === 'completed') return 'bg-slate-100 text-slate-600 border-slate-200'
+  if (status === 'cancelled') return 'bg-slate-100 text-slate-600 border-slate-200'
   if (status === 'rejected') return 'bg-rose-50 text-rose-600 border-rose-100'
   return 'bg-amber-50 text-amber-600 border-amber-100'
 }
@@ -65,6 +73,21 @@ async function updateStatus(booking: Booking, action: 'confirm' | 'reject') {
     error.value = err instanceof Error ? err.message : 'Impossible de mettre à jour la réservation.'
   } finally {
     busyIds.value = busyIds.value.filter((id) => id !== booking.id)
+  }
+}
+
+async function cancelBookingRequest(booking: Booking) {
+  if (cancelBusy.value.includes(booking.id)) return
+  cancelBusy.value = [...cancelBusy.value, booking.id]
+  cancelError.value = null
+
+  try {
+    const updated = await cancelBooking(booking.id)
+    bookings.value = bookings.value.map((item) => (item.id === updated.id ? updated : item))
+  } catch (err) {
+    cancelError.value = err instanceof Error ? err.message : 'Impossible d’annuler la réservation.'
+  } finally {
+    cancelBusy.value = cancelBusy.value.filter((id) => id !== booking.id)
   }
 }
 
@@ -143,6 +166,15 @@ onMounted(load)
               Contacter le voyageur
             </button>
             <button
+              v-if="booking.status !== 'cancelled' && booking.status !== 'completed'"
+              class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 disabled:opacity-60"
+              type="button"
+              :disabled="cancelBusy.includes(booking.id)"
+              @click="cancelBookingRequest(booking)"
+            >
+              {{ cancelBusy.includes(booking.id) ? 'Annulation...' : 'Annuler' }}
+            </button>
+            <button
               v-if="booking.status === 'pending'"
               class="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
               type="button"
@@ -165,6 +197,9 @@ onMounted(load)
       </div>
       <p v-if="error" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
         {{ error }}
+      </p>
+      <p v-if="cancelError" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
+        {{ cancelError }}
       </p>
     </div>
   </section>

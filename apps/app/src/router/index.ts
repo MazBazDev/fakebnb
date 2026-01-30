@@ -27,6 +27,13 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/checkout/:bookingId',
+      name: 'checkout',
+      component: () => import('@/views/CheckoutView.vue'),
+      meta: { requiresAuth: true },
+      props: true,
+    },
+    {
       path: '/messages',
       name: 'messages',
       component: () => import('@/views/MessagesView.vue'),

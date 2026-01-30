@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Payment;
 
 class Booking extends Model
 {
@@ -18,6 +19,8 @@ class Booking extends Model
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'paid_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
 
     public function listing(): BelongsTo
@@ -28,5 +31,10 @@ class Booking extends Model
     public function guest(): BelongsTo
     {
         return $this->belongsTo(User::class, 'guest_user_id');
+    }
+
+    public function payment()
+    {
+        return $this->hasOne(Payment::class);
     }
 }

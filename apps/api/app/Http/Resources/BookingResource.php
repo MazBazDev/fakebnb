@@ -23,6 +23,20 @@ class BookingResource extends JsonResource
             'start_date' => $this->start_date?->toDateString(),
             'end_date' => $this->end_date?->toDateString(),
             'status' => $this->status,
+            'paid_at' => $this->paid_at?->toIso8601String(),
+            'completed_at' => $this->completed_at?->toIso8601String(),
+            'payment' => $this->whenLoaded('payment', function () {
+                return [
+                    'id' => $this->payment->id,
+                    'status' => $this->payment->status,
+                    'amount_total' => $this->payment->amount_total,
+                    'amount_base' => $this->payment->amount_base,
+                    'amount_vat' => $this->payment->amount_vat,
+                    'amount_service' => $this->payment->amount_service,
+                    'commission_amount' => $this->payment->commission_amount,
+                    'payout_amount' => $this->payment->payout_amount,
+                ];
+            }),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

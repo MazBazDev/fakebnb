@@ -23,6 +23,24 @@ class BookingPolicy
         return $booking->guest_user_id === $user->id;
     }
 
+    public function cancel(User $user, Booking $booking): bool
+    {
+        if ($booking->guest_user_id === $user->id) {
+            return true;
+        }
+
+        $listing = $booking->listing()->first();
+        if ($listing && $listing->host_user_id === $user->id) {
+            return true;
+        }
+
+        return \App\Models\Cohost::query()
+            ->where('listing_id', $booking->listing_id)
+            ->where('cohost_user_id', $user->id)
+            ->where('can_edit_listings', true)
+            ->exists();
+    }
+
     public function confirm(User $user, Booking $booking): bool
     {
         return $this->canManageBooking($user, $booking);
