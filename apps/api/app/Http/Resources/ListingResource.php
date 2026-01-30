@@ -18,6 +18,15 @@ class ListingResource extends JsonResource
             'address' => $this->address,
             'price_per_night' => $this->price_per_night,
             'rules' => $this->rules,
+            'images' => $this->whenLoaded('images', function () {
+                return $this->images->map(function ($image) {
+                    return [
+                        'id' => $image->id,
+                        'url' => \Illuminate\Support\Facades\Storage::disk('public')->url($image->path),
+                        'position' => $image->position,
+                    ];
+                })->values();
+            }, []),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
