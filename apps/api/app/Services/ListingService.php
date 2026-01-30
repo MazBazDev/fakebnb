@@ -10,7 +10,7 @@ class ListingService
 {
     public function listPublic()
     {
-        return Listing::query()->latest()->get();
+        return Listing::query()->with('images')->latest()->get();
     }
 
     public function create(User $host, array $data): Listing

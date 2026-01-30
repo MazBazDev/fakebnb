@@ -104,6 +104,18 @@ async function contactHost() {
         <p class="text-sm text-slate-500">{{ listing.address }}</p>
       </header>
 
+      <div v-if="listing.images?.length" class="overflow-hidden rounded-3xl border border-slate-200">
+        <div class="flex gap-3 overflow-x-auto bg-white p-3">
+          <img
+            v-for="image in listing.images"
+            :key="image.id"
+            :src="image.url"
+            class="h-56 w-72 flex-shrink-0 rounded-2xl object-cover"
+            alt=""
+          />
+        </div>
+      </div>
+
       <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <p class="text-lg font-semibold text-slate-900">{{ listing.price_per_night }} €/nuit</p>

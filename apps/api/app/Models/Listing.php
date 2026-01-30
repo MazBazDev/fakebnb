@@ -32,4 +32,9 @@ class Listing extends Model
     {
         return $this->hasMany(Conversation::class);
     }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(ListingImage::class)->orderBy('position');
+    }
 }

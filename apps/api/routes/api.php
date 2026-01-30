@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\MessageController;
 use App\Http\Controllers\Api\V1\CohostController;
 use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\ListingController;
+use App\Http\Controllers\Api\V1\ListingImageController;
 use App\Http\Controllers\Api\V1\MeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -27,6 +28,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/me/host', [MeController::class, 'becomeHost']);
+        Route::patch('/me/profile', [MeController::class, 'updateProfile']);
 
         Route::get('/bookings', [BookingController::class, 'index']);
         Route::post('/bookings', [BookingController::class, 'store']);
@@ -39,6 +41,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/listings', [ListingController::class, 'store']);
         Route::patch('/listings/{listing}', [ListingController::class, 'update']);
         Route::delete('/listings/{listing}', [ListingController::class, 'destroy']);
+        Route::post('/listings/{listing}/images', [ListingImageController::class, 'store']);
+        Route::patch('/listings/{listing}/images/reorder', [ListingImageController::class, 'reorder']);
 
         Route::get('/cohosts', [CohostController::class, 'index']);
         Route::post('/cohosts', [CohostController::class, 'store']);

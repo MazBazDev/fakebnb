@@ -77,6 +77,14 @@ onMounted(load)
           </p>
         </div>
 
+        <div v-if="listing.images?.length" class="mt-3 overflow-hidden rounded-2xl">
+          <img
+            :src="listing.images[0].url"
+            class="h-40 w-full object-cover transition duration-300 group-hover:scale-105"
+            alt=""
+          />
+        </div>
+
         <RouterLink
           :to="`/listings/${listing.id}`"
           class="mt-4 inline-flex text-sm font-semibold text-slate-900 group-hover:underline"

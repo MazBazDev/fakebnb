@@ -19,7 +19,7 @@ class ListingController extends Controller
 
     public function show(Listing $listing)
     {
-        return ListingResource::make($listing);
+        return ListingResource::make($listing->load('images'));
     }
 
     public function store(StoreListingRequest $request, ListingService $listingService)
