@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { createListing, uploadListingImages } from '@/services/listings'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { fetchListing, updateListing, type Listing, uploadListingImages, reorderListingImages } from '@/services/listings'
 
+const route = useRoute()
 const router = useRouter()
+const listing = ref<Listing | null>(null)
+const isLoading = ref(false)
 const isSubmitting = ref(false)
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
+
 const form = ref({
   title: '',
   description: '',
@@ -17,9 +21,11 @@ const form = ref({
   rules: '',
   amenities: [] as string[],
 })
+
 const images = ref<{ id: number; file: File; preview: string }[]>([])
 let nextImageId = 0
 const isDragActive = ref(false)
+
 const amenityOptions = [
   { id: 'wifi', label: 'Wi-Fi' },
   { id: 'kitchen', label: 'Cuisine' },
@@ -33,7 +39,10 @@ const amenityOptions = [
   { id: 'hot_tub', label: 'Jacuzzi' },
 ]
 
-const orderedImages = computed(() => images.value)
+const orderedImages = computed(() => {
+  const existing = listing.value?.images ?? []
+  return [...existing].sort((a, b) => a.position - b.position)
+})
 
 function appendFiles(files: File[]) {
   files.forEach((file) => {
@@ -70,17 +79,48 @@ function handleDragLeave() {
   isDragActive.value = false
 }
 
-function moveImage(id: number, direction: 'up' | 'down') {
-  const index = images.value.findIndex((item) => item.id === id)
+function moveExistingImage(id: number, direction: 'up' | 'down') {
+  if (!listing.value?.images) return
+  const imagesList = [...listing.value.images]
+  const index = imagesList.findIndex((item) => item.id === id)
   if (index === -1) return
   const nextIndex = direction === 'up' ? index - 1 : index + 1
-  if (nextIndex < 0 || nextIndex >= images.value.length) return
-  const [item] = images.value.splice(index, 1)
-  images.value.splice(nextIndex, 0, item)
+  if (nextIndex < 0 || nextIndex >= imagesList.length) return
+  const [item] = imagesList.splice(index, 1)
+  imagesList.splice(nextIndex, 0, item)
+  listing.value.images = imagesList.map((image, idx) => ({
+    ...image,
+    position: idx + 1,
+  }))
 }
 
-function removeImage(id: number) {
+function removeNewImage(id: number) {
   images.value = images.value.filter((item) => item.id !== id)
+}
+
+async function load() {
+  isLoading.value = true
+  error.value = null
+
+  try {
+    const id = Number(route.params.id)
+    const data = await fetchListing(id)
+    listing.value = data
+    form.value = {
+      title: data.title,
+      description: data.description,
+      city: data.city,
+      address: data.address,
+      guest_capacity: data.guest_capacity,
+      price_per_night: data.price_per_night,
+      rules: data.rules ?? '',
+      amenities: data.amenities ?? [],
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Impossible de charger l’annonce.'
+  } finally {
+    isLoading.value = false
+  }
 }
 
 async function submit() {
@@ -89,7 +129,11 @@ async function submit() {
   isSubmitting.value = true
 
   try {
-    const listing = await createListing({
+    if (!listing.value) {
+      throw new Error('Annonce introuvable.')
+    }
+
+    const updated = await updateListing(listing.value.id, {
       title: form.value.title,
       description: form.value.description,
       city: form.value.city,
@@ -99,33 +143,62 @@ async function submit() {
       rules: form.value.rules || null,
       amenities: form.value.amenities,
     })
+
+    listing.value = updated
+
     if (images.value.length > 0) {
-      await uploadListingImages(
-        listing.id,
-        images.value.map((item) => item.file)
+      await uploadListingImages(listing.value.id, images.value.map((item) => item.file))
+      images.value = []
+    }
+
+    if (listing.value.images?.length) {
+      await reorderListingImages(
+        listing.value.id,
+        listing.value.images.sort((a, b) => a.position - b.position).map((image) => image.id)
       )
     }
-    success.value = 'Annonce publiée.'
-    await router.push(`/host/listings/${listing.id}/edit`)
+
+    success.value = 'Annonce mise à jour.'
+    await router.push('/host/listings')
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Impossible de créer l’annonce.'
+    error.value = err instanceof Error ? err.message : 'Impossible de modifier l’annonce.'
   } finally {
     isSubmitting.value = false
   }
 }
+
+onMounted(load)
 </script>
 
 <template>
   <section class="space-y-8">
-    <header class="space-y-2">
-      <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Nouvelle annonce</p>
-      <h1 class="text-3xl font-semibold text-slate-900">Publier un logement</h1>
-      <p class="text-sm text-slate-500">
-        Crée une annonce pour commencer à recevoir des réservations.
-      </p>
+    <header class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div>
+        <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Modifier</p>
+        <h1 class="text-3xl font-semibold text-slate-900">Mettre à jour l’annonce</h1>
+      </div>
+      <RouterLink
+        v-if="listing"
+        :to="`/listings/${listing.id}`"
+        class="inline-flex rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
+      >
+        Voir l’annonce
+      </RouterLink>
     </header>
 
+    <div v-if="error" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
+      {{ error }}
+    </div>
+
+    <div
+      v-if="isLoading"
+      class="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500"
+    >
+      Chargement de l’annonce...
+    </div>
+
     <form
+      v-else
       class="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
       @submit.prevent="submit"
     >
@@ -219,11 +292,46 @@ async function submit() {
             <span>{{ amenity.label }}</span>
           </label>
         </div>
-        <p class="text-xs text-slate-500">Sélection multiple possible.</p>
       </div>
 
       <div class="space-y-3">
-        <label class="text-sm font-medium text-slate-700">Images</label>
+        <label class="text-sm font-medium text-slate-700">Images existantes</label>
+        <div v-if="orderedImages.length" class="space-y-3">
+          <p class="text-xs text-slate-500">Réorganise les images existantes.</p>
+          <div class="grid gap-3 md:grid-cols-2">
+            <div
+              v-for="image in orderedImages"
+              :key="image.id"
+              class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3"
+            >
+              <img :src="image.url" class="h-16 w-16 rounded-xl object-cover" />
+              <div class="flex-1 text-xs text-slate-500">Position {{ image.position }}</div>
+              <div class="flex items-center gap-2">
+                <button
+                  class="rounded-full border border-slate-200 px-3 py-1 text-xs"
+                  type="button"
+                  @click="moveExistingImage(image.id, 'up')"
+                >
+                  ↑
+                </button>
+                <button
+                  class="rounded-full border border-slate-200 px-3 py-1 text-xs"
+                  type="button"
+                  @click="moveExistingImage(image.id, 'down')"
+                >
+                  ↓
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="rounded-2xl border border-dashed border-slate-200 p-4 text-xs text-slate-500">
+          Aucune image enregistrée.
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <label class="text-sm font-medium text-slate-700">Ajouter des images</label>
         <div
           class="rounded-2xl border border-dashed px-4 py-6 text-center transition"
           :class="isDragActive ? 'border-slate-900 bg-slate-50' : 'border-slate-200 bg-white'"
@@ -235,56 +343,31 @@ async function submit() {
           <p class="mt-1 text-xs text-slate-500">PNG, JPG, WebP — multiple autorisé</p>
           <label class="mt-4 inline-flex cursor-pointer rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700">
             Parcourir
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              class="hidden"
-              @change="handleFiles"
-            />
+            <input type="file" accept="image/*" multiple class="hidden" @change="handleFiles" />
           </label>
         </div>
-        <div v-if="orderedImages.length" class="space-y-3">
-          <p class="text-xs text-slate-500">Glisse les images avec les boutons pour l’ordre.</p>
+        <div v-if="images.length" class="space-y-3">
+          <p class="text-xs text-slate-500">Images en attente d’upload.</p>
           <div class="grid gap-3 md:grid-cols-2">
             <div
-              v-for="image in orderedImages"
+              v-for="image in images"
               :key="image.id"
               class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3"
             >
               <img :src="image.preview" class="h-16 w-16 rounded-xl object-cover" />
-              <div class="flex-1 text-xs text-slate-500">Position {{ orderedImages.indexOf(image) + 1 }}</div>
-              <div class="flex items-center gap-2">
-                <button
-                  class="rounded-full border border-slate-200 px-3 py-1 text-xs"
-                  type="button"
-                  @click="moveImage(image.id, 'up')"
-                >
-                  ↑
-                </button>
-                <button
-                  class="rounded-full border border-slate-200 px-3 py-1 text-xs"
-                  type="button"
-                  @click="moveImage(image.id, 'down')"
-                >
-                  ↓
-                </button>
-                <button
-                  class="rounded-full border border-rose-200 px-3 py-1 text-xs text-rose-600"
-                  type="button"
-                  @click="removeImage(image.id)"
-                >
-                  Supprimer
-                </button>
-              </div>
+              <div class="flex-1 text-xs text-slate-500">Nouvelle image</div>
+              <button
+                class="rounded-full border border-rose-200 px-3 py-1 text-xs text-rose-600"
+                type="button"
+                @click="removeNewImage(image.id)"
+              >
+                Supprimer
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div v-if="error" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
-        {{ error }}
-      </div>
       <div v-if="success" class="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-600">
         {{ success }}
       </div>
@@ -294,7 +377,7 @@ async function submit() {
         :disabled="isSubmitting"
         type="submit"
       >
-        {{ isSubmitting ? 'Publication...' : 'Publier' }}
+        {{ isSubmitting ? 'Mise à jour...' : 'Mettre à jour l’annonce' }}
       </button>
     </form>
   </section>

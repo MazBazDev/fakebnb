@@ -85,12 +85,20 @@ onMounted(load)
           />
         </div>
 
-        <RouterLink
-          :to="`/listings/${listing.id}`"
-          class="mt-4 inline-flex text-sm font-semibold text-slate-900 group-hover:underline"
-        >
-          Voir le détail
-        </RouterLink>
+        <div class="mt-4 flex items-center justify-between text-sm font-semibold">
+          <RouterLink
+            :to="`/listings/${listing.id}`"
+            class="text-slate-900 group-hover:underline"
+          >
+            Voir le détail
+          </RouterLink>
+          <RouterLink
+            :to="`/host/listings/${listing.id}/edit`"
+            class="text-slate-600 hover:text-slate-900"
+          >
+            Modifier
+          </RouterLink>
+        </div>
       </article>
     </div>
   </section>

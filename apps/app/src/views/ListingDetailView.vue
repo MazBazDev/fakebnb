@@ -17,6 +17,8 @@ const messageError = ref<string | null>(null)
 const isMessaging = ref(false)
 const bookingStatus = ref<'pending' | 'confirmed' | 'rejected' | null>(null)
 const blockedDates = ref<Set<string>>(new Set())
+const lightboxOpen = ref(false)
+const lightboxImage = ref<string | null>(null)
 const bookingForm = ref({
   start_date: '',
   end_date: '',
@@ -154,6 +156,16 @@ function statusClass(status?: string | null) {
   return 'bg-amber-50 text-amber-600 border-amber-100'
 }
 
+function openLightbox(url: string) {
+  lightboxImage.value = url
+  lightboxOpen.value = true
+}
+
+function closeLightbox() {
+  lightboxOpen.value = false
+  lightboxImage.value = null
+}
+
 async function load() {
   isLoading.value = true
   error.value = null
@@ -289,22 +301,54 @@ async function contactHost() {
         </div>
       </header>
 
-      <div v-if="listing.images?.length" class="grid gap-4 lg:grid-cols-3">
-        <div class="lg:col-span-2">
-          <img
-            :src="listing.images[0].url"
-            class="h-80 w-full rounded-3xl object-cover md:h-[420px]"
-            alt=""
-          />
+      <div v-if="listing.images?.length" class="space-y-4">
+        <div class="grid gap-4 lg:grid-cols-3">
+          <div class="lg:col-span-2">
+            <button
+              type="button"
+              class="group relative h-80 w-full overflow-hidden rounded-3xl border border-slate-200 md:h-[420px]"
+              @click="openLightbox(listing.images[0].url)"
+            >
+              <img
+                :src="listing.images[0].url"
+                class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                alt=""
+              />
+            </button>
+          </div>
+          <div class="grid gap-4">
+            <button
+              v-for="image in listing.images.slice(1, 3)"
+              :key="image.id"
+              type="button"
+              class="group relative h-36 w-full overflow-hidden rounded-3xl border border-slate-200 md:h-[200px]"
+              @click="openLightbox(image.url)"
+            >
+              <img
+                :src="image.url"
+                class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                alt=""
+              />
+            </button>
+          </div>
         </div>
-        <div class="grid gap-4">
-          <img
-            v-for="image in listing.images.slice(1, 3)"
-            :key="image.id"
-            :src="image.url"
-            class="h-36 w-full rounded-3xl object-cover md:h-[200px]"
-            alt=""
-          />
+
+        <div v-if="listing.images.length > 3" class="overflow-x-auto">
+          <div class="flex gap-3">
+            <button
+              v-for="image in listing.images.slice(3)"
+              :key="image.id"
+              type="button"
+              class="group relative h-24 w-32 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200"
+              @click="openLightbox(image.url)"
+            >
+              <img
+                :src="image.url"
+                class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                alt=""
+              />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -494,4 +538,29 @@ async function contactHost() {
       </div>
     </div>
   </section>
+
+  <div
+    v-if="lightboxOpen && lightboxImage"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 px-6 py-10"
+    role="dialog"
+    aria-modal="true"
+    @click.self="closeLightbox"
+  >
+    <div class="relative max-h-full w-full max-w-5xl">
+      <button
+        type="button"
+        class="absolute right-4 top-4 rounded-full border border-slate-200 bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700"
+        @click="closeLightbox"
+      >
+        Fermer
+      </button>
+      <div class="rounded-3xl border border-white/20 bg-white/90">
+        <img
+          :src="lightboxImage"
+          class="max-h-[80vh] w-full rounded-2xl bg-white object-contain"
+          alt=""
+        />
+      </div>
+    </div>
+  </div>
 </template>

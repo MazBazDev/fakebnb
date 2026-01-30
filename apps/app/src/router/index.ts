@@ -80,6 +80,13 @@ const router = createRouter({
       meta: { requiresAuth: true, layout: 'host' },
     },
     {
+      path: '/host/listings/:id/edit',
+      name: 'host-listing-edit',
+      component: () => import('@/views/ListingEditView.vue'),
+      meta: { requiresAuth: true, layout: 'host' },
+      props: true,
+    },
+    {
       path: '/host/listings',
       name: 'host-listings',
       component: () => import('@/views/MyListingsView.vue'),
