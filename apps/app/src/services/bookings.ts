@@ -30,6 +30,11 @@ export async function createBooking(payload: {
   return response.data
 }
 
+export async function fetchListingBookings(listingId: number) {
+  const response = await apiFetch<BookingsResponse>(`/listings/${listingId}/bookings`)
+  return response.data
+}
+
 export async function confirmBooking(id: number) {
   const response = await apiFetch<BookingResponse>(`/bookings/${id}/confirm`, {
     method: 'PATCH',

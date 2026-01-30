@@ -32,6 +32,15 @@ class BookingService
             ->get();
     }
 
+    public function listConfirmedForListing(Listing $listing)
+    {
+        return Booking::query()
+            ->where('listing_id', $listing->id)
+            ->where('status', 'confirmed')
+            ->orderBy('start_date')
+            ->get();
+    }
+
     public function create(User $guest, array $data): Booking
     {
         Gate::authorize('create', Booking::class);

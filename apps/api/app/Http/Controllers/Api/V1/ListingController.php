@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Listing\StoreListingRequest;
 use App\Http\Requests\Listing\UpdateListingRequest;
+use App\Http\Resources\BookingResource;
 use App\Http\Resources\ListingResource;
 use App\Models\Listing;
+use App\Services\BookingService;
 use App\Services\ListingService;
 use Illuminate\Http\Request;
 
@@ -20,6 +22,13 @@ class ListingController extends Controller
     public function show(Listing $listing)
     {
         return ListingResource::make($listing->load(['images', 'host']));
+    }
+
+    public function bookings(Listing $listing, BookingService $bookingService)
+    {
+        $bookings = $bookingService->listConfirmedForListing($listing);
+
+        return BookingResource::collection($bookings);
     }
 
     public function store(StoreListingRequest $request, ListingService $listingService)

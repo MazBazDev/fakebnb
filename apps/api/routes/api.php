@@ -25,6 +25,8 @@ Route::prefix('v1')->group(function () {
         ->middleware('auth.api.optional');
     Route::get('/listings/{listing}', [ListingController::class, 'show'])
         ->middleware('auth.api.optional');
+    Route::get('/listings/{listing}/bookings', [ListingController::class, 'bookings'])
+        ->middleware('auth.api.optional');
 
     Route::middleware('auth.api')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);

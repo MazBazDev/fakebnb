@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, RouterLink, useRouter } from 'vue-router'
 import { fetchListing, type Listing } from '@/services/listings'
-import { createBooking } from '@/services/bookings'
+import { createBooking, fetchListingBookings } from '@/services/bookings'
 import { createConversation } from '@/services/conversations'
 
 const route = useRoute()
@@ -16,10 +16,119 @@ const isSubmitting = ref(false)
 const messageError = ref<string | null>(null)
 const isMessaging = ref(false)
 const bookingStatus = ref<'pending' | 'confirmed' | 'rejected' | null>(null)
+const blockedDates = ref<Set<string>>(new Set())
 const bookingForm = ref({
   start_date: '',
   end_date: '',
 })
+const now = new Date()
+const activeMonth = ref(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)))
+
+function formatDate(date: Date) {
+  return date.toISOString().slice(0, 10)
+}
+
+const monthLabel = computed(() =>
+  activeMonth.value.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+)
+
+const calendarDays = computed(() => {
+  const year = activeMonth.value.getUTCFullYear()
+  const month = activeMonth.value.getUTCMonth()
+  const first = new Date(Date.UTC(year, month, 1))
+  const startDay = (first.getUTCDay() + 6) % 7
+  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+  const days: { date: Date; label: number; isOutside: boolean }[] = []
+
+  for (let i = 0; i < startDay; i += 1) {
+    const date = new Date(Date.UTC(year, month, -(startDay - 1 - i)))
+    days.push({ date, label: date.getUTCDate(), isOutside: true })
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const date = new Date(Date.UTC(year, month, day))
+    days.push({ date, label: day, isOutside: false })
+  }
+
+  while (days.length % 7 !== 0) {
+    const last = days[days.length - 1].date
+    const next = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate() + 1))
+    days.push({ date: next, label: next.getUTCDate(), isOutside: true })
+  }
+
+  return days
+})
+
+function isBlocked(date: Date) {
+  return blockedDates.value.has(formatDate(date))
+}
+
+function selectDate(date: Date) {
+  if (isBlocked(date) || isPast(date)) return
+  const value = formatDate(date)
+
+  if (!bookingForm.value.start_date || bookingForm.value.end_date) {
+    bookingForm.value.start_date = value
+    bookingForm.value.end_date = ''
+    bookingError.value = null
+    return
+  }
+
+  if (value <= bookingForm.value.start_date) {
+    bookingForm.value.start_date = value
+    bookingError.value = null
+    return
+  }
+
+  if (rangeHasBlocked(bookingForm.value.start_date, value)) {
+    bookingError.value = 'La période sélectionnée chevauche des dates indisponibles.'
+    return
+  }
+
+  bookingForm.value.end_date = value
+  bookingError.value = null
+}
+
+function isSelected(date: Date) {
+  const value = formatDate(date)
+  return bookingForm.value.start_date === value || bookingForm.value.end_date === value
+}
+
+function isInRange(date: Date) {
+  if (!bookingForm.value.start_date || !bookingForm.value.end_date) return false
+  const value = formatDate(date)
+  return value > bookingForm.value.start_date && value < bookingForm.value.end_date
+}
+
+function isPast(date: Date) {
+  const today = new Date()
+  const todayValue = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
+  return date < todayValue
+}
+
+function rangeHasBlocked(start: string, end: string) {
+  const cursor = new Date(start)
+  const endDate = new Date(end)
+  while (cursor < endDate) {
+    if (blockedDates.value.has(cursor.toISOString().slice(0, 10))) {
+      return true
+    }
+    cursor.setDate(cursor.getDate() + 1)
+  }
+  return false
+}
+
+function previousMonth() {
+  activeMonth.value = new Date(
+    Date.UTC(activeMonth.value.getUTCFullYear(), activeMonth.value.getUTCMonth() - 1, 1)
+  )
+}
+
+function nextMonth() {
+  activeMonth.value = new Date(
+    Date.UTC(activeMonth.value.getUTCFullYear(), activeMonth.value.getUTCMonth() + 1, 1)
+  )
+}
 const amenityLabels: Record<string, string> = {
   wifi: 'Wi-Fi',
   kitchen: 'Cuisine',
@@ -52,6 +161,20 @@ async function load() {
   try {
     const id = Number(route.params.id)
     listing.value = await fetchListing(id)
+    const confirmed = await fetchListingBookings(id)
+    blockedDates.value = new Set(
+      confirmed.flatMap((booking) => {
+        const start = new Date(booking.start_date)
+        const end = new Date(booking.end_date)
+        const dates: string[] = []
+        const cursor = new Date(start)
+        while (cursor < end) {
+          dates.push(cursor.toISOString().slice(0, 10))
+          cursor.setDate(cursor.getDate() + 1)
+        }
+        return dates
+      })
+    )
     bookingStatus.value = null
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Impossible de charger l’annonce.'
@@ -72,6 +195,19 @@ async function submitBooking() {
       throw new Error('Annonce introuvable.')
     }
 
+    if (!bookingForm.value.start_date || !bookingForm.value.end_date) {
+      throw new Error('Veuillez sélectionner des dates.')
+    }
+    if (blockedDates.value.has(bookingForm.value.start_date)) {
+      throw new Error('La date d’arrivée sélectionnée est indisponible.')
+    }
+    if (blockedDates.value.has(bookingForm.value.end_date)) {
+      throw new Error('La date de départ sélectionnée est indisponible.')
+    }
+    if (rangeHasBlocked(bookingForm.value.start_date, bookingForm.value.end_date)) {
+      throw new Error('La période sélectionnée chevauche des dates indisponibles.')
+    }
+
     await createBooking({
       listing_id: listing.value.id,
       start_date: bookingForm.value.start_date,
@@ -80,6 +216,7 @@ async function submitBooking() {
     bookingSuccess.value = 'Demande envoyée. En attente de validation de l’hôte.'
     bookingForm.value = { start_date: '', end_date: '' }
     bookingStatus.value = 'pending'
+    await load()
   } catch (err) {
     bookingError.value = err instanceof Error ? err.message : 'Impossible de réserver.'
   } finally {
@@ -124,14 +261,19 @@ async function contactHost() {
       Chargement de l’annonce...
     </div>
 
-    <div v-else-if="listing" class="space-y-6">
-      <header class="space-y-2">
-        <p class="text-sm uppercase tracking-[0.2em] text-slate-500">{{ listing.city }}</p>
-        <h1 class="text-3xl font-semibold text-slate-900">{{ listing.title }}</h1>
+    <div v-else-if="listing" class="space-y-10">
+      <header class="space-y-4">
+        <div class="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.2em] text-slate-400">
+          <span>{{ listing.city }}</span>
+          <span class="h-1 w-1 rounded-full bg-slate-300"></span>
+          <span>Annonce #{{ listing.id }}</span>
+        </div>
+        <h1 class="text-4xl font-semibold text-slate-900 md:text-5xl">{{ listing.title }}</h1>
         <p class="text-sm text-slate-500">{{ listing.address }}</p>
+
         <div v-if="listing.host" class="flex items-center gap-3">
           <span
-            class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-xs font-semibold text-slate-700"
+            class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-sm font-semibold text-slate-700"
           >
             <img
               v-if="listing.host.profile_photo_url"
@@ -140,136 +282,216 @@ async function contactHost() {
             />
             <span v-else>{{ listing.host.name?.[0] ?? '?' }}</span>
           </span>
-          <div class="text-xs text-slate-500">
+          <div class="text-sm text-slate-500">
             <p class="font-semibold text-slate-700">Hôte</p>
             <p>{{ listing.host.name }}</p>
           </div>
         </div>
       </header>
 
-      <div v-if="listing.images?.length" class="overflow-hidden rounded-3xl border border-slate-200">
-        <div class="flex gap-3 overflow-x-auto bg-white p-3">
+      <div v-if="listing.images?.length" class="grid gap-4 lg:grid-cols-3">
+        <div class="lg:col-span-2">
           <img
-            v-for="image in listing.images"
+            :src="listing.images[0].url"
+            class="h-80 w-full rounded-3xl object-cover md:h-[420px]"
+            alt=""
+          />
+        </div>
+        <div class="grid gap-4">
+          <img
+            v-for="image in listing.images.slice(1, 3)"
             :key="image.id"
             :src="image.url"
-            class="h-56 w-72 flex-shrink-0 rounded-2xl object-cover"
+            class="h-36 w-full rounded-3xl object-cover md:h-[200px]"
             alt=""
           />
         </div>
       </div>
 
-      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <p class="text-lg font-semibold text-slate-900">{{ listing.price_per_night }} €/nuit</p>
-          <span class="text-xs font-semibold text-slate-500">
-            Capacité {{ listing.guest_capacity }} personne{{ listing.guest_capacity > 1 ? 's' : '' }}
-          </span>
-          <span class="text-xs uppercase tracking-[0.2em] text-slate-400">
-            Id #{{ listing.id }}
-          </span>
-        </div>
+      <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div class="space-y-8">
+          <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <p class="text-xl font-semibold text-slate-900">
+                {{ listing.price_per_night }} €/nuit
+              </p>
+              <span class="text-xs font-semibold text-slate-500">
+                Capacité {{ listing.guest_capacity }} personne{{ listing.guest_capacity > 1 ? 's' : '' }}
+              </span>
+            </div>
 
-        <div
-          v-if="bookingStatus"
-          class="mt-4 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold"
-          :class="statusClass(bookingStatus)"
-        >
-          Statut réservation: {{ formatStatus(bookingStatus) }}
-        </div>
+            <div
+              v-if="bookingStatus"
+              class="mt-4 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold"
+              :class="statusClass(bookingStatus)"
+            >
+              Statut réservation: {{ formatStatus(bookingStatus) }}
+            </div>
 
-        <p class="mt-4 text-sm text-slate-600">{{ listing.description }}</p>
+            <p class="mt-4 text-sm text-slate-600">{{ listing.description }}</p>
 
-        <div
-          v-if="listing.amenities?.length"
-          class="mt-6 flex flex-wrap items-center gap-2"
-        >
-          <span
-            v-for="amenity in listing.amenities"
-            :key="amenity"
-            class="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600"
-          >
-            {{ amenityLabels[amenity] ?? amenity.replace('_', ' ') }}
-          </span>
-        </div>
+            <div
+              v-if="listing.amenities?.length"
+              class="mt-6 flex flex-wrap items-center gap-2"
+            >
+              <span
+                v-for="amenity in listing.amenities"
+                :key="amenity"
+                class="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600"
+              >
+                {{ amenityLabels[amenity] ?? amenity.replace('_', ' ') }}
+              </span>
+            </div>
 
-        <div v-if="listing.rules" class="mt-6 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Règles</p>
-          <p class="mt-2">{{ listing.rules }}</p>
-        </div>
+            <div
+              v-if="listing.rules"
+              class="mt-6 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600"
+            >
+              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Règles</p>
+              <p class="mt-2">{{ listing.rules }}</p>
+            </div>
 
-        <div class="mt-6 flex flex-wrap items-center gap-3">
-          <button
-            v-if="listing.can_book !== false"
-            class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
-            type="button"
-            :disabled="isMessaging"
-            @click="contactHost"
-          >
-            {{ isMessaging ? 'Ouverture...' : 'Contacter l’hôte' }}
-          </button>
-          <p v-else class="text-xs text-slate-500">
-            Vous gérez cette annonce.
-          </p>
-          <p v-if="messageError" class="text-xs text-rose-600">{{ messageError }}</p>
-        </div>
-      </div>
-
-      <div
-        v-if="listing.can_book === false"
-        class="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm"
-      >
-        Vous ne pouvez pas réserver votre propre annonce.
-      </div>
-
-      <form
-        v-else
-        class="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-        @submit.prevent="submitBooking"
-      >
-        <h2 class="text-sm font-semibold text-slate-700">Réserver ce logement</h2>
-        <div class="grid gap-4 md:grid-cols-2">
-          <div class="space-y-2">
-            <label class="text-sm font-medium text-slate-700">Arrivée</label>
-            <input
-              v-model="bookingForm.start_date"
-              type="date"
-              class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
-              required
-            />
-          </div>
-          <div class="space-y-2">
-            <label class="text-sm font-medium text-slate-700">Départ</label>
-            <input
-              v-model="bookingForm.end_date"
-              type="date"
-              class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
-              required
-            />
+            <div class="mt-6 flex flex-wrap items-center gap-3">
+              <button
+                v-if="listing.can_book !== false"
+                class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
+                type="button"
+                :disabled="isMessaging"
+                @click="contactHost"
+              >
+                {{ isMessaging ? 'Ouverture...' : 'Contacter l’hôte' }}
+              </button>
+              <p v-else class="text-xs text-slate-500">Vous gérez cette annonce.</p>
+              <p v-if="messageError" class="text-xs text-rose-600">{{ messageError }}</p>
+            </div>
           </div>
         </div>
 
-        <div
-          v-if="bookingError"
-          class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600"
-        >
-          {{ bookingError }}
-        </div>
-        <div
-          v-if="bookingSuccess"
-          class="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-600"
-        >
-          {{ bookingSuccess }}
-        </div>
+        <aside class="space-y-4 lg:sticky lg:top-8">
+          <div
+            v-if="listing.can_book === false"
+            class="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm"
+          >
+            Vous ne pouvez pas réserver votre propre annonce.
+          </div>
 
-        <button
-          class="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          :disabled="isSubmitting"
-          type="submit"
-        >
-          {{ isSubmitting ? 'Réservation...' : 'Réserver' }}
-        </button>
-      </form>
+          <form
+            v-else
+            class="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+            @submit.prevent="submitBooking"
+          >
+            <div class="flex items-center justify-between">
+              <h2 class="text-sm font-semibold text-slate-700">Réserver ce logement</h2>
+              <span class="text-xs text-slate-400">Demande en attente</span>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div class="flex items-center justify-between">
+                <button
+                  type="button"
+                  class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600"
+                  @click="previousMonth"
+                >
+                  ←
+                </button>
+                <span class="text-sm font-semibold text-slate-700">{{ monthLabel }}</span>
+                <button
+                  type="button"
+                  class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600"
+                  @click="nextMonth"
+                >
+                  →
+                </button>
+              </div>
+
+              <div class="mt-4 grid grid-cols-7 gap-2 text-xs text-slate-400">
+                <span class="text-center">Lu</span>
+                <span class="text-center">Ma</span>
+                <span class="text-center">Me</span>
+                <span class="text-center">Je</span>
+                <span class="text-center">Ve</span>
+                <span class="text-center">Sa</span>
+                <span class="text-center">Di</span>
+              </div>
+
+              <div class="mt-2 grid grid-cols-7 gap-2">
+                <button
+                  v-for="day in calendarDays"
+                  :key="day.date.toISOString()"
+                  type="button"
+                  class="flex h-10 items-center justify-center rounded-xl text-sm transition"
+                  :class="[
+                    day.isOutside ? 'text-slate-300' : 'text-slate-700',
+                    isBlocked(day.date) || isPast(day.date)
+                      ? 'cursor-not-allowed bg-rose-50 text-rose-300'
+                      : 'hover:bg-slate-900 hover:text-white',
+                    isInRange(day.date) ? 'bg-slate-200 text-slate-900' : '',
+                    isSelected(day.date) ? 'bg-slate-900 text-white' : '',
+                  ]"
+                  :disabled="day.isOutside || isBlocked(day.date) || isPast(day.date)"
+                  @click="selectDate(day.date)"
+                >
+                  {{ day.label }}
+                </button>
+              </div>
+
+              <div class="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <span class="rounded-full border border-slate-200 bg-white px-2 py-1">
+                  Disponible
+                </span>
+                <span
+                  class="rounded-full border border-rose-100 bg-rose-50 px-2 py-1 text-rose-600"
+                >
+                  Indisponible
+                </span>
+                <span class="rounded-full border border-slate-200 bg-slate-200 px-2 py-1">
+                  Sélection
+                </span>
+              </div>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
+              <div class="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  Arrivée
+                </p>
+                <p class="mt-2 text-base font-semibold text-slate-900">
+                  {{ bookingForm.start_date || 'Sélectionner une date' }}
+                </p>
+              </div>
+              <div class="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  Départ
+                </p>
+                <p class="mt-2 text-base font-semibold text-slate-900">
+                  {{ bookingForm.end_date || 'Sélectionner une date' }}
+                </p>
+              </div>
+            </div>
+
+            <div
+              v-if="bookingError"
+              class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600"
+            >
+              {{ bookingError }}
+            </div>
+            <div
+              v-if="bookingSuccess"
+              class="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-600"
+            >
+              {{ bookingSuccess }}
+            </div>
+
+            <button
+              class="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="isSubmitting"
+              type="submit"
+            >
+              {{ isSubmitting ? 'Réservation...' : 'Réserver' }}
+            </button>
+          </form>
+        </aside>
+      </div>
     </div>
   </section>
 </template>
