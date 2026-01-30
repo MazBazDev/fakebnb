@@ -59,7 +59,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return response()->json([
-                'message' => $exception->getMessage(),
+                'message' => $exception->getMessage() ?: 'Action interdite.',
             ], 403);
         });
 
