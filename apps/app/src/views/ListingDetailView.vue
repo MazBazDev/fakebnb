@@ -161,6 +161,7 @@ async function contactHost() {
 
         <div class="mt-6 flex flex-wrap items-center gap-3">
           <button
+            v-if="listing.can_book !== false"
             class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
             type="button"
             :disabled="isMessaging"
@@ -168,11 +169,22 @@ async function contactHost() {
           >
             {{ isMessaging ? 'Ouverture...' : 'Contacter l’hôte' }}
           </button>
+          <p v-else class="text-xs text-slate-500">
+            Vous gérez cette annonce.
+          </p>
           <p v-if="messageError" class="text-xs text-rose-600">{{ messageError }}</p>
         </div>
       </div>
 
+      <div
+        v-if="listing.can_book === false"
+        class="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm"
+      >
+        Vous ne pouvez pas réserver votre propre annonce.
+      </div>
+
       <form
+        v-else
         class="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
         @submit.prevent="submitBooking"
       >

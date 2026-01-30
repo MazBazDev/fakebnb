@@ -98,6 +98,43 @@ it('returns bookings for guest or host', function () {
         ->assertJsonPath('data.0.id', $booking->id);
 });
 
+it('prevents host from booking their own listing', function () {
+    [$host, $listing] = hostWithListing();
+    $headers = authHeaderForBooking($host, 'booking-host-own');
+
+    $response = $this->postJson('/api/v1/bookings', [
+        'listing_id' => $listing->id,
+        'start_date' => now()->addDays(2)->toDateString(),
+        'end_date' => now()->addDays(4)->toDateString(),
+    ], $headers);
+
+    $response->assertStatus(403);
+});
+
+it('prevents cohost from booking the listing', function () {
+    [$host, $listing] = hostWithListing();
+    $cohost = User::factory()->create();
+
+    \App\Models\Cohost::create([
+        'host_user_id' => $host->id,
+        'cohost_user_id' => $cohost->id,
+        'listing_id' => $listing->id,
+        'can_read_conversations' => true,
+        'can_reply_messages' => true,
+        'can_edit_listings' => false,
+    ]);
+
+    $headers = authHeaderForBooking($cohost, 'booking-cohost-own');
+
+    $response = $this->postJson('/api/v1/bookings', [
+        'listing_id' => $listing->id,
+        'start_date' => now()->addDays(2)->toDateString(),
+        'end_date' => now()->addDays(4)->toDateString(),
+    ], $headers);
+
+    $response->assertStatus(403);
+});
+
 it('allows host to confirm a booking', function () {
     [$host, $listing] = hostWithListing();
     $guest = User::factory()->create();

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Conversation;
+use App\Models\Cohost;
 use App\Models\Listing;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -33,7 +34,13 @@ class ConversationService
 
         $listing = Listing::findOrFail($listingId);
 
-        if ($listing->host_user_id === $guest->id) {
+        $isHost = $listing->host_user_id === $guest->id;
+        $isCohost = Cohost::query()
+            ->where('listing_id', $listing->id)
+            ->where('cohost_user_id', $guest->id)
+            ->exists();
+
+        if ($isHost || $isCohost) {
             throw new AuthorizationException('Impossible de créer une conversation avec soi-même.');
         }
 

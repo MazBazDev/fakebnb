@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'auth.api' => \App\Http\Middleware\ApiTokenAuth::class,
+            'auth.api.optional' => \App\Http\Middleware\OptionalApiTokenAuth::class,
         ]);
 
         $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);

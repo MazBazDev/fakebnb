@@ -21,8 +21,10 @@ Route::prefix('v1')->group(function () {
 
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/login', [AuthController::class, 'login']);
-    Route::get('/listings', [ListingController::class, 'index']);
-    Route::get('/listings/{listing}', [ListingController::class, 'show']);
+    Route::get('/listings', [ListingController::class, 'index'])
+        ->middleware('auth.api.optional');
+    Route::get('/listings/{listing}', [ListingController::class, 'show'])
+        ->middleware('auth.api.optional');
 
     Route::middleware('auth.api')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);

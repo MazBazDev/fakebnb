@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Models\Booking;
+use App\Models\Cohost;
 use App\Models\Listing;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Auth\Access\AuthorizationException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class BookingService
@@ -33,6 +35,17 @@ class BookingService
     public function create(User $guest, array $data): Booking
     {
         Gate::authorize('create', Booking::class);
+
+        $listing = Listing::findOrFail($data['listing_id']);
+        $isHost = $listing->host_user_id === $guest->id;
+        $isCohost = Cohost::query()
+            ->where('listing_id', $listing->id)
+            ->where('cohost_user_id', $guest->id)
+            ->exists();
+
+        if ($isHost || $isCohost) {
+            throw new AuthorizationException('Impossible de réserver votre propre annonce.');
+        }
 
         $start = Carbon::parse($data['start_date'])->startOfDay();
         $end = Carbon::parse($data['end_date'])->startOfDay();

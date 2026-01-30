@@ -11,6 +11,7 @@ export type Listing = {
   price_per_night: number
   rules: string | null
   amenities?: string[]
+  can_book?: boolean | null
   images?: ListingImage[]
   created_at?: string | null
 }
