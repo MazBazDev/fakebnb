@@ -47,7 +47,8 @@ it('creates a booking when dates are available', function () {
 
     $response->assertCreated()
         ->assertJsonPath('data.listing_id', $listing->id)
-        ->assertJsonPath('data.guest_user_id', $guest->id);
+        ->assertJsonPath('data.guest_user_id', $guest->id)
+        ->assertJsonPath('data.status', 'pending');
 });
 
 it('rejects overlapping bookings with 409', function () {
@@ -59,6 +60,7 @@ it('rejects overlapping bookings with 409', function () {
         'guest_user_id' => $guest->id,
         'start_date' => now()->addDays(10)->toDateString(),
         'end_date' => now()->addDays(12)->toDateString(),
+        'status' => 'confirmed',
     ]);
 
     $headers = authHeaderForBooking(User::factory()->create(), 'booking-conflict');
@@ -94,4 +96,60 @@ it('returns bookings for guest or host', function () {
 
     $hostResponse->assertOk()
         ->assertJsonPath('data.0.id', $booking->id);
+});
+
+it('allows host to confirm a booking', function () {
+    [$host, $listing] = hostWithListing();
+    $guest = User::factory()->create();
+    $booking = Booking::create([
+        'listing_id' => $listing->id,
+        'guest_user_id' => $guest->id,
+        'start_date' => now()->addDays(3)->toDateString(),
+        'end_date' => now()->addDays(6)->toDateString(),
+        'status' => 'pending',
+    ]);
+
+    $headers = authHeaderForBooking($host, 'booking-confirm');
+
+    $response = $this->patchJson("/api/v1/bookings/{$booking->id}/confirm", [], $headers);
+
+    $response->assertOk()
+        ->assertJsonPath('data.status', 'confirmed');
+});
+
+it('allows host to reject a booking', function () {
+    [$host, $listing] = hostWithListing();
+    $guest = User::factory()->create();
+    $booking = Booking::create([
+        'listing_id' => $listing->id,
+        'guest_user_id' => $guest->id,
+        'start_date' => now()->addDays(3)->toDateString(),
+        'end_date' => now()->addDays(6)->toDateString(),
+        'status' => 'pending',
+    ]);
+
+    $headers = authHeaderForBooking($host, 'booking-reject');
+
+    $response = $this->patchJson("/api/v1/bookings/{$booking->id}/reject", [], $headers);
+
+    $response->assertOk()
+        ->assertJsonPath('data.status', 'rejected');
+});
+
+it('prevents guests from confirming a booking', function () {
+    [$host, $listing] = hostWithListing();
+    $guest = User::factory()->create();
+    $booking = Booking::create([
+        'listing_id' => $listing->id,
+        'guest_user_id' => $guest->id,
+        'start_date' => now()->addDays(3)->toDateString(),
+        'end_date' => now()->addDays(6)->toDateString(),
+        'status' => 'pending',
+    ]);
+
+    $headers = authHeaderForBooking($guest, 'booking-confirm-guest');
+
+    $response = $this->patchJson("/api/v1/bookings/{$booking->id}/confirm", [], $headers);
+
+    $response->assertStatus(403);
 });

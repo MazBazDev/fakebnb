@@ -32,6 +32,8 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/bookings', [BookingController::class, 'index']);
         Route::post('/bookings', [BookingController::class, 'store']);
+        Route::patch('/bookings/{booking}/confirm', [BookingController::class, 'confirm']);
+        Route::patch('/bookings/{booking}/reject', [BookingController::class, 'reject']);
 
         Route::get('/conversations', [ConversationController::class, 'index']);
         Route::post('/conversations', [ConversationController::class, 'store']);

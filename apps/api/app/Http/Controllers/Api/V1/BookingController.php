@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Booking\StoreBookingRequest;
 use App\Http\Resources\BookingResource;
+use App\Models\Booking;
 use App\Services\BookingService;
 use Illuminate\Http\Request;
 
@@ -22,5 +23,19 @@ class BookingController extends Controller
         $booking = $bookingService->create($request->user(), $request->validated());
 
         return BookingResource::make($booking)->response()->setStatusCode(201);
+    }
+
+    public function confirm(Request $request, Booking $booking, BookingService $bookingService)
+    {
+        $booking = $bookingService->confirm($request->user(), $booking->loadMissing('listing'));
+
+        return BookingResource::make($booking);
+    }
+
+    public function reject(Request $request, Booking $booking, BookingService $bookingService)
+    {
+        $booking = $bookingService->reject($request->user(), $booking->loadMissing('listing'));
+
+        return BookingResource::make($booking);
     }
 }

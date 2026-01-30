@@ -33,6 +33,18 @@ function listingLabel(listingId: number) {
   return listing ? `${listing.title} — ${listing.city}` : `Annonce #${listingId}`
 }
 
+function statusLabel(status: Booking['status']) {
+  if (status === 'confirmed') return 'Confirmée'
+  if (status === 'rejected') return 'Refusée'
+  return 'En attente'
+}
+
+function statusClass(status: Booking['status']) {
+  if (status === 'confirmed') return 'bg-emerald-50 text-emerald-600 border-emerald-100'
+  if (status === 'rejected') return 'bg-rose-50 text-rose-600 border-rose-100'
+  return 'bg-amber-50 text-amber-600 border-amber-100'
+}
+
 onMounted(load)
 </script>
 
@@ -72,6 +84,14 @@ onMounted(load)
             </span>
             <span class="text-xs uppercase tracking-[0.2em] text-slate-400">
               #{{ booking.id }}
+            </span>
+          </div>
+          <div class="mt-2">
+            <span
+              class="rounded-full border px-3 py-1 text-xs font-semibold"
+              :class="statusClass(booking.status)"
+            >
+              {{ statusLabel(booking.status) }}
             </span>
           </div>
           <p class="mt-2">

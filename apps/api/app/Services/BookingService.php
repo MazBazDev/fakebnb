@@ -39,6 +39,7 @@ class BookingService
 
         $hasConflict = Booking::query()
             ->where('listing_id', $data['listing_id'])
+            ->where('status', 'confirmed')
             ->where('start_date', '<', $end->toDateString())
             ->where('end_date', '>', $start->toDateString())
             ->exists();
@@ -52,6 +53,39 @@ class BookingService
             'guest_user_id' => $guest->id,
             'start_date' => $start->toDateString(),
             'end_date' => $end->toDateString(),
+            'status' => 'pending',
         ]);
+    }
+
+    public function confirm(User $host, Booking $booking): Booking
+    {
+        Gate::authorize('confirm', $booking);
+
+        $hasConflict = Booking::query()
+            ->where('listing_id', $booking->listing_id)
+            ->where('status', 'confirmed')
+            ->where('id', '!=', $booking->id)
+            ->where('start_date', '<', $booking->end_date->toDateString())
+            ->where('end_date', '>', $booking->start_date->toDateString())
+            ->exists();
+
+        if ($hasConflict) {
+            throw new ConflictHttpException('Dates indisponibles.');
+        }
+
+        $booking->status = 'confirmed';
+        $booking->save();
+
+        return $booking->fresh();
+    }
+
+    public function reject(User $host, Booking $booking): Booking
+    {
+        Gate::authorize('reject', $booking);
+
+        $booking->status = 'rejected';
+        $booking->save();
+
+        return $booking->fresh();
     }
 }

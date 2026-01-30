@@ -63,7 +63,7 @@ async function submitBooking() {
       start_date: bookingForm.value.start_date,
       end_date: bookingForm.value.end_date,
     })
-    bookingSuccess.value = 'Réservation confirmée.'
+    bookingSuccess.value = 'Demande envoyée. En attente de validation de l’hôte.'
     bookingForm.value = { start_date: '', end_date: '' }
   } catch (err) {
     bookingError.value = err instanceof Error ? err.message : 'Impossible de réserver.'

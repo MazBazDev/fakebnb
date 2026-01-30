@@ -15,6 +15,7 @@ class BookingResource extends JsonResource
             'guest_user_id' => $this->guest_user_id,
             'start_date' => $this->start_date?->toDateString(),
             'end_date' => $this->end_date?->toDateString(),
+            'status' => $this->status,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

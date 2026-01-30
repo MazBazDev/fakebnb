@@ -6,6 +6,7 @@ export type Booking = {
   guest_user_id: number
   start_date: string
   end_date: string
+  status: 'pending' | 'confirmed' | 'rejected'
   created_at?: string | null
 }
 
@@ -25,6 +26,20 @@ export async function createBooking(payload: {
   const response = await apiFetch<BookingResponse>('/bookings', {
     method: 'POST',
     body: JSON.stringify(payload),
+  })
+  return response.data
+}
+
+export async function confirmBooking(id: number) {
+  const response = await apiFetch<BookingResponse>(`/bookings/${id}/confirm`, {
+    method: 'PATCH',
+  })
+  return response.data
+}
+
+export async function rejectBooking(id: number) {
+  const response = await apiFetch<BookingResponse>(`/bookings/${id}/reject`, {
+    method: 'PATCH',
   })
   return response.data
 }
