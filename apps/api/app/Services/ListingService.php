@@ -32,8 +32,10 @@ class ListingService
             'description' => $data['description'],
             'city' => $data['city'],
             'address' => $data['address'],
+            'guest_capacity' => $data['guest_capacity'],
             'price_per_night' => $data['price_per_night'],
             'rules' => $data['rules'] ?? null,
+            'amenities' => $data['amenities'] ?? [],
         ]);
     }
 

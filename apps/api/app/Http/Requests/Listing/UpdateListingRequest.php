@@ -18,8 +18,11 @@ class UpdateListingRequest extends FormRequest
             'description' => ['sometimes', 'string'],
             'city' => ['sometimes', 'string', 'max:255'],
             'address' => ['sometimes', 'string', 'max:255'],
+            'guest_capacity' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'price_per_night' => ['sometimes', 'integer', 'min:1'],
             'rules' => ['nullable', 'string'],
+            'amenities' => ['nullable', 'array'],
+            'amenities.*' => ['string', 'max:50'],
         ];
     }
 }

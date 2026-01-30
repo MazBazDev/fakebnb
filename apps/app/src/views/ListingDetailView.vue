@@ -19,6 +19,18 @@ const bookingForm = ref({
   start_date: '',
   end_date: '',
 })
+const amenityLabels: Record<string, string> = {
+  wifi: 'Wi-Fi',
+  kitchen: 'Cuisine',
+  parking: 'Parking gratuit',
+  washer: 'Lave-linge',
+  tv: 'TV',
+  air_conditioning: 'Climatisation',
+  heating: 'Chauffage',
+  workspace: 'Espace de travail',
+  pool: 'Piscine',
+  hot_tub: 'Jacuzzi',
+}
 
 async function load() {
   isLoading.value = true
@@ -119,12 +131,28 @@ async function contactHost() {
       <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <p class="text-lg font-semibold text-slate-900">{{ listing.price_per_night }} €/nuit</p>
+          <span class="text-xs font-semibold text-slate-500">
+            Capacité {{ listing.guest_capacity }} personne{{ listing.guest_capacity > 1 ? 's' : '' }}
+          </span>
           <span class="text-xs uppercase tracking-[0.2em] text-slate-400">
             Id #{{ listing.id }}
           </span>
         </div>
 
         <p class="mt-4 text-sm text-slate-600">{{ listing.description }}</p>
+
+        <div
+          v-if="listing.amenities?.length"
+          class="mt-6 flex flex-wrap items-center gap-2"
+        >
+          <span
+            v-for="amenity in listing.amenities"
+            :key="amenity"
+            class="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600"
+          >
+            {{ amenityLabels[amenity] ?? amenity.replace('_', ' ') }}
+          </span>
+        </div>
 
         <div v-if="listing.rules" class="mt-6 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Règles</p>

@@ -60,6 +60,7 @@ it('prevents non-host users from creating listings', function () {
         'description' => 'Centre ville',
         'city' => 'Paris',
         'address' => '3 rue de Rivoli',
+        'guest_capacity' => 2,
         'price_per_night' => 90,
     ], $headers);
 
@@ -77,8 +78,10 @@ it('allows a host to create listings', function () {
         'description' => 'Avec jardin',
         'city' => 'Nantes',
         'address' => '4 rue Verte',
+        'guest_capacity' => 4,
         'price_per_night' => 110,
         'rules' => 'Non fumeur',
+        'amenities' => ['wifi', 'parking'],
     ], $headers);
 
     $response->assertCreated()

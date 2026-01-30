@@ -7,8 +7,10 @@ export type Listing = {
   description: string
   city: string
   address: string
+  guest_capacity: number
   price_per_night: number
   rules: string | null
+  amenities?: string[]
   images?: ListingImage[]
   created_at?: string | null
 }

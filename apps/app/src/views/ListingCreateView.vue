@@ -12,12 +12,26 @@ const form = ref({
   description: '',
   city: '',
   address: '',
+  guest_capacity: 1,
   price_per_night: 0,
   rules: '',
+  amenities: [] as string[],
 })
 const images = ref<{ id: number; file: File; preview: string }[]>([])
 let nextImageId = 0
 const isDragActive = ref(false)
+const amenityOptions = [
+  { id: 'wifi', label: 'Wi-Fi' },
+  { id: 'kitchen', label: 'Cuisine' },
+  { id: 'parking', label: 'Parking gratuit' },
+  { id: 'washer', label: 'Lave-linge' },
+  { id: 'tv', label: 'TV' },
+  { id: 'air_conditioning', label: 'Climatisation' },
+  { id: 'heating', label: 'Chauffage' },
+  { id: 'workspace', label: 'Espace de travail' },
+  { id: 'pool', label: 'Piscine' },
+  { id: 'hot_tub', label: 'Jacuzzi' },
+]
 
 const orderedImages = computed(() => images.value)
 
@@ -80,8 +94,10 @@ async function submit() {
       description: form.value.description,
       city: form.value.city,
       address: form.value.address,
+      guest_capacity: Number(form.value.guest_capacity),
       price_per_night: Number(form.value.price_per_night),
       rules: form.value.rules || null,
+      amenities: form.value.amenities,
     })
     if (images.value.length > 0) {
       await uploadListingImages(
@@ -154,13 +170,24 @@ async function submit() {
         ></textarea>
       </div>
 
-      <div class="grid gap-4 md:grid-cols-2">
+      <div class="grid gap-4 md:grid-cols-3">
         <div class="space-y-2">
           <label class="text-sm font-medium text-slate-700">Prix par nuit (€)</label>
           <input
             v-model.number="form.price_per_night"
             type="number"
             min="1"
+            class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
+            required
+          />
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-slate-700">Capacité (personnes)</label>
+          <input
+            v-model.number="form.guest_capacity"
+            type="number"
+            min="1"
+            max="100"
             class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
             required
           />
@@ -173,6 +200,26 @@ async function submit() {
             class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
           />
         </div>
+      </div>
+
+      <div class="space-y-3">
+        <label class="text-sm font-medium text-slate-700">Équipements</label>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <label
+            v-for="amenity in amenityOptions"
+            :key="amenity.id"
+            class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+          >
+            <input
+              v-model="form.amenities"
+              type="checkbox"
+              :value="amenity.id"
+              class="h-4 w-4 rounded border-slate-300 text-slate-900"
+            />
+            <span>{{ amenity.label }}</span>
+          </label>
+        </div>
+        <p class="text-xs text-slate-500">Sélection multiple possible.</p>
       </div>
 
       <div class="space-y-3">

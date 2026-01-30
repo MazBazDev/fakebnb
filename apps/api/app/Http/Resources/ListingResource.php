@@ -16,8 +16,10 @@ class ListingResource extends JsonResource
             'description' => $this->description,
             'city' => $this->city,
             'address' => $this->address,
+            'guest_capacity' => $this->guest_capacity,
             'price_per_night' => $this->price_per_night,
             'rules' => $this->rules,
+            'amenities' => $this->amenities ?? [],
             'images' => $this->whenLoaded('images', function () {
                 return $this->images->map(function ($image) {
                     return [

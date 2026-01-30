@@ -14,8 +14,14 @@ class Listing extends Model
         'description',
         'city',
         'address',
+        'guest_capacity',
         'price_per_night',
         'rules',
+        'amenities',
+    ];
+
+    protected $casts = [
+        'amenities' => 'array',
     ];
 
     public function host(): BelongsTo
