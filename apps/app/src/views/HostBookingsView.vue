@@ -28,12 +28,12 @@ async function load() {
   error.value = null
 
   try {
-    const [bookingsData, listingsData] = await Promise.all([
+    const [bookingsData, listingsResponse] = await Promise.all([
       fetchBookings(),
       fetchMyListings(),
     ])
     bookings.value = bookingsData
-    listings.value = listingsData
+    listings.value = listingsResponse.data ?? []
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Impossible de charger les réservations.'
   } finally {
