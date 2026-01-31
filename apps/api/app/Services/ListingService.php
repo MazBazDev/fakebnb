@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Listing;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 
 class ListingService
 {
@@ -76,6 +77,12 @@ class ListingService
     public function delete(User $user, Listing $listing): void
     {
         Gate::authorize('delete', $listing);
+
+        $paths = $listing->images()->pluck('path')->all();
+        if (! empty($paths)) {
+            Storage::disk('public')->delete($paths);
+        }
+        Storage::disk('public')->deleteDirectory("listings/{$listing->id}");
 
         $listing->delete();
     }

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { fetchMyListings, type Listing } from '@/services/listings'
+import { deleteListing, fetchMyListings, type Listing } from '@/services/listings'
 
 const listings = ref<Listing[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
+const deleteBusy = ref<number[]>([])
+const deleteError = ref<string | null>(null)
 
 async function load() {
   isLoading.value = true
@@ -17,6 +19,21 @@ async function load() {
     error.value = err instanceof Error ? err.message : 'Impossible de charger vos annonces.'
   } finally {
     isLoading.value = false
+  }
+}
+
+async function removeListing(listing: Listing) {
+  if (deleteBusy.value.includes(listing.id)) return
+  deleteBusy.value = [...deleteBusy.value, listing.id]
+  deleteError.value = null
+
+  try {
+    await deleteListing(listing.id)
+    listings.value = listings.value.filter((item) => item.id !== listing.id)
+  } catch (err) {
+    deleteError.value = err instanceof Error ? err.message : 'Impossible de supprimer l’annonce.'
+  } finally {
+    deleteBusy.value = deleteBusy.value.filter((id) => id !== listing.id)
   }
 }
 
@@ -40,6 +57,9 @@ onMounted(load)
 
     <div v-if="error" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
       {{ error }}
+    </div>
+    <div v-if="deleteError" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
+      {{ deleteError }}
     </div>
 
     <div
@@ -104,6 +124,14 @@ onMounted(load)
           >
             Modifier
           </RouterLink>
+          <button
+            class="text-rose-600 hover:text-rose-700 disabled:opacity-60"
+            type="button"
+            :disabled="deleteBusy.includes(listing.id)"
+            @click="removeListing(listing)"
+          >
+            {{ deleteBusy.includes(listing.id) ? 'Suppression...' : 'Supprimer' }}
+          </button>
         </div>
       </article>
     </div>
