@@ -105,10 +105,6 @@ watch(
           MiniBnB
         </RouterLink>
 
-        <div class="mt-4 flex items-center">
-          <NotificationBell align="left" />
-        </div>
-
         <nav class="mt-8 flex flex-1 flex-col gap-2 text-sm text-slate-600">
           <RouterLink to="/host" class="rounded-xl px-3 py-2 hover:bg-slate-50">
             Tableau de bord
@@ -121,9 +117,6 @@ watch(
           </RouterLink>
           <RouterLink to="/host/cohosts" class="rounded-xl px-3 py-2 hover:bg-slate-50">
             Co-hôtes
-          </RouterLink>
-          <RouterLink to="/listings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Retour au mode voyageur
           </RouterLink>
         </nav>
 
@@ -151,43 +144,44 @@ watch(
       </aside>
 
       <div class="flex flex-1 flex-col">
-        <header
-          v-if="showSidebar"
-          class="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 md:hidden"
-        >
-          <RouterLink to="/" class="text-sm font-semibold tracking-wide text-slate-900">
-            MiniBnB
-          </RouterLink>
-          <div class="flex items-center gap-3">
-            <NotificationBell />
-            <button
-              class="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold"
-              type="button"
-              @click="sidebarOpen = true"
-            >
-              Menu
-            </button>
-          </div>
-        </header>
-
-        <header v-else class="border-b border-slate-200 bg-white/80 backdrop-blur">
+        <header class="border-b border-slate-200 bg-white/80 backdrop-blur">
           <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-            <RouterLink to="/" class="text-sm font-semibold tracking-wide text-slate-900">
-              MiniBnB
-            </RouterLink>
+            <div class="flex items-center gap-3">
+              <button
+                v-if="showSidebar"
+                class="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold md:hidden"
+                type="button"
+                @click="sidebarOpen = true"
+              >
+                Menu
+              </button>
+              <RouterLink to="/" class="text-sm font-semibold tracking-wide text-slate-900">
+                MiniBnB
+              </RouterLink>
+            </div>
 
             <nav class="flex items-center gap-4 text-sm">
-              <RouterLink to="/" class="text-slate-600 hover:text-slate-900">Accueil</RouterLink>
-              <RouterLink to="/listings" class="text-slate-600 hover:text-slate-900">
+              <RouterLink
+                v-if="!showSidebar"
+                to="/"
+                class="text-slate-600 hover:text-slate-900"
+              >
+                Accueil
+              </RouterLink>
+              <RouterLink
+                v-if="!showSidebar"
+                to="/listings"
+                class="text-slate-600 hover:text-slate-900"
+              >
                 Annonces
               </RouterLink>
               <NotificationBell v-if="isAuthed" />
               <RouterLink
                 v-if="isAuthed"
-                to="/host"
+                :to="showSidebar ? '/listings' : '/host'"
                 class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
               >
-                Mode hôte
+                {{ showSidebar ? 'Mode voyageur' : 'Mode hôte' }}
               </RouterLink>
               <RouterLink v-if="!isAuthed" to="/login" class="text-slate-600 hover:text-slate-900">
                 Connexion
@@ -229,12 +223,6 @@ watch(
                     class="block rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                   >
                     Mes messages
-                  </RouterLink>
-                  <RouterLink
-                    to="/host"
-                    class="block rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                  >
-                    Mode hôte
                   </RouterLink>
                   <RouterLink
                     to="/bookings"
@@ -291,9 +279,6 @@ watch(
           </RouterLink>
           <RouterLink to="/host/cohosts" class="rounded-xl px-3 py-2 hover:bg-slate-50">
             Co-hôtes
-          </RouterLink>
-          <RouterLink to="/listings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Retour au mode voyageur
           </RouterLink>
         </nav>
       </aside>
