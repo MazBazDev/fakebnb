@@ -81,6 +81,8 @@ class PaymentService
         $booking->paid_at = now();
         $booking->save();
 
+        \App\Events\BookingUpdated::dispatch($booking);
+
         return $payment->fresh();
     }
 }

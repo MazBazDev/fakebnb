@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { cancelBooking, confirmBooking, fetchBookings, rejectBooking, type Booking } from '@/services/bookings'
 import { createConversation } from '@/services/conversations'
 import { useRouter } from 'vue-router'
 import { fetchMyListings, type Listing } from '@/services/listings'
+import { getEcho } from '@/services/echo'
+import { useAuthStore } from '@/stores/auth'
 
 const bookings = ref<Booking[]>([])
 const listings = ref<Listing[]>([])
@@ -12,7 +14,9 @@ const error = ref<string | null>(null)
 const busyIds = ref<number[]>([])
 const cancelBusy = ref<number[]>([])
 const cancelError = ref<string | null>(null)
+const auth = useAuthStore()
 const router = useRouter()
+const bookingChannel = ref<string | null>(null)
 
 const hostBookingIds = computed(() => new Set(listings.value.map((listing) => listing.id)))
 const hostBookings = computed(() =>
@@ -103,6 +107,38 @@ async function openConversation(booking: Booking) {
 }
 
 onMounted(load)
+
+watch(
+  () => auth.user?.id,
+  (userId) => {
+    const echo = getEcho()
+    if (bookingChannel.value) {
+      echo.leave(bookingChannel.value)
+      bookingChannel.value = null
+    }
+
+    if (!userId) return
+
+    const channel = `App.Models.User.${userId}`
+    bookingChannel.value = channel
+    echo.private(channel).listen('.BookingUpdated', (payload: Booking) => {
+      const existing = bookings.value.find((item) => item.id === payload.id)
+      if (existing) {
+        bookings.value = bookings.value.map((item) => (item.id === payload.id ? payload : item))
+      } else {
+        bookings.value = [payload, ...bookings.value]
+      }
+    })
+  },
+  { immediate: true }
+)
+
+onUnmounted(() => {
+  const echo = getEcho()
+  if (bookingChannel.value) {
+    echo.leave(bookingChannel.value)
+  }
+})
 </script>
 
 <template>

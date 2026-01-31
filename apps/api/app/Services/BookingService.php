@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Booking;
+use App\Events\BookingUpdated;
 use App\Models\Cohost;
 use App\Models\Listing;
 use App\Models\User;
@@ -70,13 +71,17 @@ class BookingService
             throw new ConflictHttpException('Dates indisponibles.');
         }
 
-        return Booking::create([
+        $booking = Booking::create([
             'listing_id' => $data['listing_id'],
             'guest_user_id' => $guest->id,
             'start_date' => $start->toDateString(),
             'end_date' => $end->toDateString(),
             'status' => 'pending',
         ]);
+
+        BookingUpdated::dispatch($booking);
+
+        return $booking;
     }
 
     public function confirm(User $host, Booking $booking): Booking
@@ -102,6 +107,8 @@ class BookingService
         $booking->status = 'awaiting_payment';
         $booking->save();
 
+        BookingUpdated::dispatch($booking);
+
         return $booking->fresh();
     }
 
@@ -111,6 +118,8 @@ class BookingService
 
         $booking->status = 'rejected';
         $booking->save();
+
+        BookingUpdated::dispatch($booking);
 
         return $booking->fresh();
     }
@@ -132,6 +141,8 @@ class BookingService
             $payment->refunded_at = now();
             $payment->save();
         }
+
+        BookingUpdated::dispatch($booking->fresh()->load('payment'));
 
         return $booking->fresh()->load('payment');
     }
