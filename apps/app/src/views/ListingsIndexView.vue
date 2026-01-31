@@ -12,7 +12,8 @@ async function load() {
   error.value = null
 
   try {
-    listings.value = await fetchListings()
+    const response = await fetchListings()
+    listings.value = response.data
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Impossible de charger les annonces.'
   } finally {
@@ -79,7 +80,7 @@ onMounted(load)
 
         <div v-if="listing.images?.length" class="mt-3 overflow-hidden rounded-2xl">
           <img
-            :src="listing.images[0].url"
+            :src="listing.images[0]?.url"
             class="h-40 w-full object-cover transition duration-300 group-hover:scale-105"
             alt=""
           />

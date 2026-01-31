@@ -29,7 +29,8 @@ const initials = computed(() => {
 function handlePhotoChange(event: Event) {
   const input = event.target as HTMLInputElement
   if (!input.files?.length) return
-  const file = input.files[0]
+  const file = input.files.item(0)
+  if (!file) return
   photoFile.value = file
   photoPreview.value = URL.createObjectURL(file)
 }

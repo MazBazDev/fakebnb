@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import Breadcrumbs from '@/components/Breadcrumbs.vue'
-import maplibregl, { Map } from 'maplibre-gl'
+import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { fetchListings, type Listing } from '@/services/listings'
 
@@ -15,8 +15,8 @@ const minGuests = ref<number | ''>('')
 const total = ref(0)
 
 const mapContainer = ref<HTMLDivElement | null>(null)
-const map = ref<Map | null>(null)
-const markers = ref<maplibregl.Marker[]>([])
+const map = ref<any>(null)
+const markers = ref<Array<{ remove: () => void }>>([])
 let moveTimeout: number | null = null
 
 const paddingKm = 5
@@ -35,7 +35,8 @@ function boundsString() {
 }
 
 async function load() {
-  if (!map.value) return
+  const mapInstance = map.value
+  if (!mapInstance) return
   isLoading.value = true
   error.value = null
 
@@ -62,7 +63,8 @@ function refreshMarkers() {
   markers.value.forEach((marker) => marker.remove())
   markers.value = []
 
-  if (!map.value) return
+  const mapInstance = map.value
+  if (!mapInstance) return
 
   listings.value.forEach((listing) => {
     if (listing.latitude == null || listing.longitude == null) return
@@ -73,7 +75,7 @@ function refreshMarkers() {
           `<div style="font-size:12px;font-weight:600;">${listing.title}</div>`
         )
       )
-      .addTo(map.value as Map)
+      .addTo(mapInstance) as unknown as { remove: () => void }
 
     markers.value.push(marker)
   })

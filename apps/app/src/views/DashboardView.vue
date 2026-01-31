@@ -40,7 +40,7 @@ function sparklinePoints(values: number[], width = 120, height = 32, padding = 4
 }
 
 function latestSeriesValue(values: number[]) {
-  return values.length ? values[values.length - 1] : 0
+  return values.length ? values[values.length - 1] ?? 0 : 0
 }
 
 async function loadDashboard() {

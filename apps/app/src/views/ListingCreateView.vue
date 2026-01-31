@@ -78,6 +78,7 @@ function moveImage(id: number, direction: 'up' | 'down') {
   const nextIndex = direction === 'up' ? index - 1 : index + 1
   if (nextIndex < 0 || nextIndex >= images.value.length) return
   const [item] = images.value.splice(index, 1)
+  if (!item) return
   images.value.splice(nextIndex, 0, item)
 }
 

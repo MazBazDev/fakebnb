@@ -1,9 +1,9 @@
 import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
 
-let echoInstance: Echo | null = null
+let echoInstance: Echo<any> | null = null
 
-export function getEcho() {
+export function getEcho(): Echo<any> {
   if (echoInstance) {
     return echoInstance
   }

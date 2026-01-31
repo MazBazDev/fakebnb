@@ -9,6 +9,16 @@ export type Booking = {
     name: string
     profile_photo_url?: string | null
   }
+  listing?: {
+    id: number
+    title: string
+    city: string
+    images?: Array<{
+      id: number
+      url: string
+      position: number
+    }>
+  }
   start_date: string
   end_date: string
   status: 'pending' | 'awaiting_payment' | 'confirmed' | 'rejected' | 'completed' | 'cancelled'

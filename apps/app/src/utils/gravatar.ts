@@ -23,7 +23,11 @@ function md5(input: string) {
     const w = new Array<number>(16)
     for (let j = 0; j < 16; j++) {
       const k = i + j * 4
-      w[j] = bytes[k] | (bytes[k + 1] << 8) | (bytes[k + 2] << 16) | (bytes[k + 3] << 24)
+      const b0 = bytes[k] ?? 0
+      const b1 = bytes[k + 1] ?? 0
+      const b2 = bytes[k + 2] ?? 0
+      const b3 = bytes[k + 3] ?? 0
+      w[j] = b0 | (b1 << 8) | (b2 << 16) | (b3 << 24)
     }
 
     let a = h0
@@ -52,8 +56,8 @@ function md5(input: string) {
       const tmp = d
       d = c
       c = b
-      const rotate = S[j]
-      const sum = (a + f + K[j] + w[g]) >>> 0
+      const rotate = S[j] ?? 0
+      const sum = (a + f + (K[j] ?? 0) + (w[g] ?? 0)) >>> 0
       b = (b + leftRotate(sum, rotate)) >>> 0
       a = tmp
     }
@@ -79,7 +83,8 @@ function toUtf8Bytes(str: string) {
       bytes.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f))
     } else {
       i++
-      code = 0x10000 + (((code & 0x3ff) << 10) | (str.charCodeAt(i) & 0x3ff))
+      const next = str.charCodeAt(i) || 0
+      code = 0x10000 + (((code & 0x3ff) << 10) | (next & 0x3ff))
       bytes.push(
         0xf0 | (code >> 18),
         0x80 | ((code >> 12) & 0x3f),

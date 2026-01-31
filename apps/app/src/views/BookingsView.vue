@@ -228,7 +228,7 @@ onUnmounted(() => {
 
           <div v-if="listingFor(booking)?.images?.length" class="mt-4 overflow-hidden rounded-2xl">
             <img
-              :src="listingFor(booking)?.images?.[0].url"
+              :src="listingFor(booking)?.images?.[0]?.url"
               class="h-40 w-full object-cover"
               alt=""
             />

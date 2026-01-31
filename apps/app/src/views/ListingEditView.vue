@@ -89,6 +89,7 @@ function moveExistingImage(id: number, direction: 'up' | 'down') {
   const nextIndex = direction === 'up' ? index - 1 : index + 1
   if (nextIndex < 0 || nextIndex >= imagesList.length) return
   const [item] = imagesList.splice(index, 1)
+  if (!item) return
   imagesList.splice(nextIndex, 0, item)
   listing.value.images = imagesList.map((image, idx) => ({
     ...image,

@@ -57,7 +57,9 @@ const calendarDays = computed(() => {
   }
 
   while (days.length % 7 !== 0) {
-    const last = days[days.length - 1].date
+    const lastEntry = days[days.length - 1]
+    if (!lastEntry) break
+    const last = lastEntry.date
     const next = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate() + 1))
     days.push({ date: next, label: next.getUTCDate(), isOutside: true })
   }
@@ -196,7 +198,8 @@ const totalPrice = computed(() => {
   return nightsCount.value * listing.value.price_per_night
 })
 
-function openLightbox(url: string) {
+function openLightbox(url?: string | null) {
+  if (!url) return
   lightboxImage.value = url
   lightboxOpen.value = true
 }
@@ -372,10 +375,10 @@ async function contactHost() {
             <button
               type="button"
               class="group relative h-80 w-full overflow-hidden rounded-3xl border border-slate-200 md:h-[420px]"
-              @click="openLightbox(listing.images[0].url)"
+              @click="openLightbox(listing.images?.[0]?.url)"
             >
               <img
-                :src="listing.images[0].url"
+                :src="listing.images?.[0]?.url"
                 class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
                 alt=""
               />
