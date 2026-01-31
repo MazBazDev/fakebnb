@@ -65,14 +65,8 @@ Tests
 
 Critère OK : un utilisateur peut s’inscrire, se connecter, accéder à des pages privées.
 
-👥 LOT 2 — Rôles, permissions & co-hôtes
+👥 LOT 2 — Permissions & co-hôtes
 Backend
-
- Rôle client par défaut
-
- Rôle hôte
-
- Passage client → hôte
 
  Modèle co-hôte (délégation)
 
@@ -113,6 +107,12 @@ Backend
 
  Ressources API (exposition maîtrisée des données)
 
+ Caractéristiques logement (capacité, équipements, règles)
+
+ Images multiples + ordre persistant (upload multipart)
+
+ Suppression d’annonce avec cascades (messages, réservations, médias)
+
 Frontend
 
  Liste des annonces
@@ -122,6 +122,8 @@ Frontend
  Création / édition annonce (hôte)
 
  UI “attractive” (minimum visuel)
+
+ Galerie images (lightbox)
 
 Tests
 
@@ -146,6 +148,10 @@ Backend
 
  Lecture réservations (client / hôte)
 
+ Validation par l’hôte (pending → awaiting_payment → confirmed)
+
+ Annulation + remboursement
+
 Frontend
 
  Sélecteur de dates
@@ -155,6 +161,8 @@ Frontend
  Historique réservations (client)
 
  Planning réservations (hôte)
+
+ Empêcher réservation par hôte/co-hôte
 
 Tests
 
@@ -183,6 +191,8 @@ co-hôte autorisé
 
  Validation des droits par policy
 
+ Realtime (Reverb/WebSockets)
+
 Frontend
 
  Liste des conversations
@@ -191,7 +201,7 @@ Frontend
 
  Envoi message
 
- UI temps réel simulé (rafraîchissement OK)
+ UI temps réel (messages + notifications)
 
 Tests
 
@@ -203,7 +213,62 @@ Tests
 
 Critère OK : messagerie sécurisée, liée au contexte d’une annonce.
 
-⚡ LOT 6 — Cache navigateur (exigé TP)
+💳 LOT 6 — Paiement (fake)
+Backend
+
+ Intent de paiement
+
+ Autorisation + capture (automatique)
+
+ Calcul TVA + frais de service + commission
+
+ Remboursement lors annulation
+
+ Notifications paiement
+
+Frontend
+
+ Checkout dédié
+
+ Récapitulatif prix
+
+Critère OK : le flow paiement est simulé de bout en bout.
+
+🔔 LOT 7 — Notifications (in-app + email)
+Backend
+
+ Notifications DB + broadcast
+
+ Email : inscription, réservation, statut, paiement
+
+ Mailpit via Sail
+
+Frontend
+
+ Bell + liste temps réel
+
+ Supprimer après lecture
+
+Critère OK : l’utilisateur reçoit les événements clés.
+
+🧭 LOT 8 — Recherche & carte
+Backend
+
+ Filtres (ville, capacité, texte) + pagination
+
+ Géocodage adresse → coordonnées
+
+Frontend
+
+ Barre de recherche + filtres
+
+ Page MapLibre + OpenStreetMap
+
+ Listing filtré par bounds carte
+
+Critère OK : recherche multi-critères + mode carte.
+
+⚡ LOT 9 — Cache navigateur (exigé TP)
 Backend
 
  Headers Cache-Control
@@ -230,7 +295,7 @@ Tests / preuve
 
 Critère OK : le cache est visible et justifiable.
 
-🧪 LOT 7 — Tests & qualité (transversal)
+🧪 LOT 10 — Tests & qualité (transversal)
 Backend
 
  Tests feature sur chaque domaine :
@@ -255,7 +320,7 @@ Règle repo
 
  Aucune feature “done” sans tests
 
-📚 LOT 8 — Documentation & livrables
+📚 LOT 11 — Documentation & livrables
 Docs (/docs)
 
  Architecture du projet
