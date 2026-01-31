@@ -13,8 +13,13 @@ const page = ref(1)
 const perPage = 12
 const total = ref(0)
 const lastPage = ref(1)
+const allCities = ref<string[]>([])
 
 const cities = computed(() => {
+  if (allCities.value.length > 0) {
+    return allCities.value
+  }
+
   const unique = new Set(listings.value.map((listing) => listing.city).filter(Boolean))
   return Array.from(unique).sort()
 })
@@ -34,6 +39,10 @@ async function load() {
       per_page: perPage,
     })
     listings.value = response.data
+    if (!selectedCity.value) {
+      const unique = new Set(response.data.map((listing) => listing.city).filter(Boolean))
+      allCities.value = Array.from(unique).sort()
+    }
     total.value = response.meta?.total ?? response.data.length
     lastPage.value = response.meta?.last_page ?? 1
   } catch (err) {
