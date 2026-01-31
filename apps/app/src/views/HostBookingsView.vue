@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { cancelBooking, confirmBooking, fetchBookings, rejectBooking, type Booking } from '@/services/bookings'
 import { createConversation } from '@/services/conversations'
 import { useRouter } from 'vue-router'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import { fetchCohostListings, fetchMyListings, type Listing } from '@/services/listings'
 import { getEcho } from '@/services/echo'
 import { useAuthStore } from '@/stores/auth'
@@ -167,7 +168,7 @@ onUnmounted(() => {
 <template>
   <section class="space-y-8">
     <header class="space-y-2">
-      <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Espace hôte</p>
+      <Breadcrumbs :items="[{ label: 'Hôte', to: '/host' }, { label: 'Réservations' }]" />
       <h1 class="text-3xl font-semibold text-slate-900">Réservations reçues</h1>
       <p class="text-sm text-slate-500">
         Suis les réservations qui concernent tes annonces.

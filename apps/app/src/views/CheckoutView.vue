@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import { fetchBookings, type Booking } from '@/services/bookings'
 import { createPaymentIntent, authorizePayment } from '@/services/payments'
 
@@ -61,6 +62,12 @@ onMounted(load)
 <template>
   <section class="space-y-8">
     <header class="space-y-2">
+      <Breadcrumbs
+        :items="[
+          { label: 'Mes réservations', to: '/bookings' },
+          { label: booking ? `Paiement #${booking.id}` : 'Paiement' },
+        ]"
+      />
       <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Checkout</p>
       <h1 class="text-3xl font-semibold text-slate-900">Paiement de la réservation</h1>
       <p class="text-sm text-slate-500">Simulation de paiement (fake).</p>

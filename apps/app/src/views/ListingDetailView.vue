@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, RouterLink, useRouter } from 'vue-router'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import { fetchListing, type Listing } from '@/services/listings'
 import { createBooking, fetchListingBookings, fetchBookings, type Booking } from '@/services/bookings'
 import { createConversation } from '@/services/conversations'
@@ -325,6 +326,13 @@ async function contactHost() {
 
     <div v-else-if="listing" class="space-y-10">
       <header class="space-y-4">
+        <Breadcrumbs
+          :items="[
+            { label: 'Accueil', to: '/' },
+            { label: 'Annonces', to: '/' },
+            { label: listing.title },
+          ]"
+        />
         <div class="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.2em] text-slate-400">
           <span>{{ listing.city }}</span>
           <span class="h-1 w-1 rounded-full bg-slate-300"></span>

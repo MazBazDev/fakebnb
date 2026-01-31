@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import { fetchListing, updateListing, type Listing, uploadListingImages, reorderListingImages } from '@/services/listings'
 
 const route = useRoute()
@@ -190,7 +191,14 @@ onMounted(load)
   <section class="space-y-8">
     <header class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div>
-        <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Modifier</p>
+        <Breadcrumbs
+          :items="[
+            { label: 'Hôte', to: '/host' },
+            { label: 'Annonces', to: '/host/listings' },
+            { label: listing?.title ?? 'Annonce' },
+            { label: 'Modifier' },
+          ]"
+        />
         <h1 class="text-3xl font-semibold text-slate-900">Mettre à jour l’annonce</h1>
       </div>
       <RouterLink

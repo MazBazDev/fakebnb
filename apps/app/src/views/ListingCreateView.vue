@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import { createListing, uploadListingImages } from '@/services/listings'
 
 const router = useRouter()
@@ -120,7 +121,13 @@ async function submit() {
 <template>
   <section class="space-y-8">
     <header class="space-y-2">
-      <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Nouvelle annonce</p>
+      <Breadcrumbs
+        :items="[
+          { label: 'Hôte', to: '/host' },
+          { label: 'Annonces', to: '/host/listings' },
+          { label: 'Nouvelle annonce' },
+        ]"
+      />
       <h1 class="text-3xl font-semibold text-slate-900">Publier un logement</h1>
       <p class="text-sm text-slate-500">
         Crée une annonce pour commencer à recevoir des réservations.

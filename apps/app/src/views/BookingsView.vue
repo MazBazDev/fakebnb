@@ -5,6 +5,7 @@ import { fetchListings, type Listing } from '@/services/listings'
 import { createConversation } from '@/services/conversations'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter, RouterLink } from 'vue-router'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import { getEcho } from '@/services/echo'
 
 const auth = useAuthStore()
@@ -139,6 +140,7 @@ onUnmounted(() => {
 <template>
   <section class="space-y-8">
     <header class="space-y-2">
+      <Breadcrumbs :items="[{ label: 'Accueil', to: '/' }, { label: 'Mes réservations' }]" />
       <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Mes réservations</p>
       <h1 class="text-3xl font-semibold text-slate-900">Mes réservations</h1>
       <p class="text-sm text-slate-500">

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import { useAuthStore } from '@/stores/auth'
 import { fetchHostStats, type HostStats } from '@/services/hostStats'
 
@@ -61,7 +62,7 @@ onMounted(loadDashboard)
 <template>
   <section class="space-y-6">
     <header class="space-y-2">
-      <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Espace hôte</p>
+      <Breadcrumbs :items="[{ label: 'Hôte', to: '/host' }, { label: 'Tableau de bord' }]" />
       <h1 class="text-3xl font-semibold text-slate-900">Bienvenue {{ displayName }}</h1>
       <p class="text-sm text-slate-500">
         Centralise tes annonces, réservations et messages dans un espace dédié.

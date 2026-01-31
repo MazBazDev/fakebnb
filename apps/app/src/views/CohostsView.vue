@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import {
   createCohost,
   deleteCohost,
@@ -103,7 +104,7 @@ onMounted(load)
 <template>
   <section class="space-y-8">
     <header class="space-y-2">
-      <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Co-hôtes</p>
+      <Breadcrumbs :items="[{ label: 'Hôte', to: '/host' }, { label: 'Co-hôtes' }]" />
       <h1 class="text-3xl font-semibold text-slate-900">Gérer les délégations</h1>
       <p class="text-sm text-slate-500">
         Ajoute un co-hôte par email et configure ses permissions par annonce.

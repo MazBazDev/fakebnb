@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import {
   deleteListing,
   fetchCohostListings,
@@ -95,8 +96,11 @@ watch(activeTab, () => {
   <section class="space-y-8">
     <header class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div>
-        <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Mes annonces</p>
+        <Breadcrumbs :items="[{ label: 'Hôte', to: '/host' }, { label: 'Annonces' }]" />
         <h1 class="text-3xl font-semibold text-slate-900">Vos logements publiés</h1>
+        <p class="text-sm text-slate-500">
+          Retrouvez vos annonces et celles où vous êtes co-hôte.
+        </p>
       </div>
       <RouterLink
         v-if="activeTab === 'host'"
@@ -179,6 +183,12 @@ watch(activeTab, () => {
                 class="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-700"
               >
                 Co-hôte
+              </span>
+              <span
+                v-else
+                class="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600"
+              >
+                Hôte
               </span>
               <span class="text-xs font-semibold text-slate-700">
                 {{ listing.price_per_night }} €/nuit

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
+import { useRoute } from 'vue-router'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import { fetchMessages, sendMessage, type Message } from '@/services/messages'
 import { getEcho } from '@/services/echo'
 import { useAuthStore } from '@/stores/auth'
@@ -22,6 +23,24 @@ const messagesPath = computed(() => {
     return listingId ? `/host/listings/${listingId}/messages` : '/host/listings'
   }
   return '/messages'
+})
+
+const breadcrumbs = computed(() => {
+  if (route.meta.layout === 'host') {
+    const listingId = route.query.listing
+    return [
+      { label: 'Hôte', to: '/host' },
+      { label: 'Annonces', to: '/host/listings' },
+      { label: 'Messagerie', to: listingId ? `/host/listings/${listingId}/messages` : '/host/listings' },
+      { label: 'Conversation' },
+    ]
+  }
+
+  return [
+    { label: 'Accueil', to: '/' },
+    { label: 'Messagerie', to: '/messages' },
+    { label: 'Conversation' },
+  ]
 })
 
 async function load() {
@@ -92,13 +111,8 @@ onUnmounted(() => {
 
 <template>
   <section class="flex h-[calc(100vh-160px)] flex-col gap-4">
-    <header class="flex items-center justify-between">
-      <RouterLink
-        :to="messagesPath"
-        class="text-sm font-semibold text-slate-600 hover:text-slate-900"
-      >
-        ← Retour aux conversations
-      </RouterLink>
+    <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <Breadcrumbs :items="breadcrumbs" />
       <span class="text-xs uppercase tracking-[0.2em] text-slate-400">Fil de discussion</span>
     </header>
 

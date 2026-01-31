@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import maplibregl, { Map } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { fetchListings, type Listing } from '@/services/listings'
@@ -143,6 +144,7 @@ watch([search, selectedCity, minGuests], () => {
   <section class="space-y-6">
     <header class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div>
+        <Breadcrumbs :items="[{ label: 'Accueil', to: '/' }, { label: 'Carte' }]" />
         <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Carte</p>
         <h1 class="text-3xl font-semibold text-slate-900">Recherche sur la carte</h1>
         <p class="text-sm text-slate-500">Bouge la carte pour filtrer les annonces.</p>

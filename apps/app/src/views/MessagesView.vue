@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import { fetchConversations, type Conversation } from '@/services/conversations'
 
 const conversations = ref<Conversation[]>([])
@@ -26,6 +27,7 @@ onMounted(load)
 <template>
   <section class="space-y-8">
     <header class="space-y-2">
+      <Breadcrumbs :items="[{ label: 'Accueil', to: '/' }, { label: 'Messagerie' }]" />
       <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Messagerie</p>
       <h1 class="text-3xl font-semibold text-slate-900">Mes conversations</h1>
       <p class="text-sm text-slate-500">Retrouve tes échanges avec les hôtes.</p>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import { useAuthStore } from '@/stores/auth'
 import { updateProfile } from '@/services/profile'
 
@@ -58,6 +59,7 @@ async function submit() {
 <template>
   <section class="space-y-8">
     <header class="space-y-2">
+      <Breadcrumbs :items="[{ label: 'Accueil', to: '/' }, { label: 'Profil' }]" />
       <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Profil</p>
       <h1 class="text-3xl font-semibold text-slate-900">Mon profil</h1>
       <p class="text-sm text-slate-500">

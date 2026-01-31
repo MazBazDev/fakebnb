@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import { fetchConversations, type Conversation } from '@/services/conversations'
 import { fetchListing, type Listing } from '@/services/listings'
 
@@ -38,7 +39,14 @@ onMounted(load)
 <template>
   <section class="space-y-8">
     <header class="space-y-2">
-      <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Messagerie hôte</p>
+      <Breadcrumbs
+        :items="[
+          { label: 'Hôte', to: '/host' },
+          { label: 'Annonces', to: '/host/listings' },
+          { label: listing?.title ?? 'Annonce' },
+          { label: 'Messagerie' },
+        ]"
+      />
       <h1 class="text-3xl font-semibold text-slate-900">
         Conversations — {{ listing?.title ?? 'Annonce' }}
       </h1>
@@ -88,11 +96,5 @@ onMounted(load)
       </article>
     </div>
 
-    <RouterLink
-      to="/host/listings"
-      class="inline-flex rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
-    >
-      Retour aux annonces
-    </RouterLink>
   </section>
 </template>

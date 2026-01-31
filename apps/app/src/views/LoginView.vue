@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -31,6 +32,7 @@ async function submit() {
 <template>
   <section class="mx-auto max-w-md space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
     <header class="space-y-1">
+      <Breadcrumbs :items="[{ label: 'Accueil', to: '/' }, { label: 'Connexion' }]" />
       <h1 class="text-2xl font-semibold text-slate-900">Connexion</h1>
       <p class="text-sm text-slate-500">Accédez à votre espace hôte ou client.</p>
     </header>
