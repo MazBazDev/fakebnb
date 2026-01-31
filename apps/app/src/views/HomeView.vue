@@ -75,12 +75,20 @@ function prevPage() {
 
 <template>
   <section class="space-y-8">
-    <header class="space-y-3">
-      <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Explorer</p>
-      <h1 class="text-4xl font-semibold text-slate-900">Trouve ton prochain séjour</h1>
-      <p class="max-w-2xl text-sm text-slate-500">
-        Filtre par ville, recherche et capacité pour trouver le logement idéal.
-      </p>
+    <header class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div class="space-y-3">
+        <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Explorer</p>
+        <h1 class="text-4xl font-semibold text-slate-900">Trouve ton prochain séjour</h1>
+        <p class="max-w-2xl text-sm text-slate-500">
+          Filtre par ville, recherche et capacité pour trouver le logement idéal.
+        </p>
+      </div>
+      <RouterLink
+        to="/map"
+        class="inline-flex rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
+      >
+        Ouvrir la carte
+      </RouterLink>
     </header>
 
     <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">

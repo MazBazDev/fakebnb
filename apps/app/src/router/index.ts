@@ -10,6 +10,11 @@ const router = createRouter({
       component: () => import('@/views/HomeView.vue'),
     },
     {
+      path: '/map',
+      name: 'map-search',
+      component: () => import('@/views/MapSearchView.vue'),
+    },
+    {
       path: '/listings',
       name: 'listings',
       redirect: '/',

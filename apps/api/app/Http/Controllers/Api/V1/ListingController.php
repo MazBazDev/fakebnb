@@ -16,7 +16,7 @@ class ListingController extends Controller
 {
     public function index(Request $request, ListingService $listingService)
     {
-        $filters = $request->only(['search', 'city', 'min_guests']);
+        $filters = $request->only(['search', 'city', 'min_guests', 'bounds', 'padding_km']);
         $perPage = (int) $request->integer('per_page', 12);
         $perPage = max(1, min($perPage, 60));
 

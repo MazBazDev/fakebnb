@@ -12,6 +12,9 @@ export type Listing = {
   description: string
   city: string
   address: string
+  full_address?: string | null
+  latitude?: number | null
+  longitude?: number | null
   guest_capacity: number
   price_per_night: number
   rules: string | null
@@ -43,6 +46,8 @@ export async function fetchListings(filters?: {
   search?: string
   city?: string
   min_guests?: number
+  bounds?: string
+  padding_km?: number
   page?: number
   per_page?: number
 }) {
@@ -50,6 +55,8 @@ export async function fetchListings(filters?: {
   if (filters?.search) params.set('search', filters.search)
   if (filters?.city) params.set('city', filters.city)
   if (filters?.min_guests) params.set('min_guests', String(filters.min_guests))
+  if (filters?.bounds) params.set('bounds', filters.bounds)
+  if (filters?.padding_km) params.set('padding_km', String(filters.padding_km))
   if (filters?.page) params.set('page', String(filters.page))
   if (filters?.per_page) params.set('per_page', String(filters.per_page))
 

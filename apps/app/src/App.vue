@@ -155,26 +155,9 @@ watch(
               >
                 Menu
               </button>
-              <RouterLink to="/" class="text-sm font-semibold tracking-wide text-slate-900">
-                MiniBnB
-              </RouterLink>
             </div>
 
             <nav class="flex items-center gap-4 text-sm">
-              <RouterLink
-                v-if="!showSidebar"
-                to="/"
-                class="text-slate-600 hover:text-slate-900"
-              >
-                Accueil
-              </RouterLink>
-              <RouterLink
-                v-if="!showSidebar"
-                to="/listings"
-                class="text-slate-600 hover:text-slate-900"
-              >
-                Annonces
-              </RouterLink>
               <NotificationBell v-if="isAuthed" />
               <RouterLink
                 v-if="isAuthed"

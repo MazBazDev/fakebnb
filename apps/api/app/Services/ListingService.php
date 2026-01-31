@@ -4,12 +4,16 @@ namespace App\Services;
 
 use App\Models\Listing;
 use App\Models\User;
+use App\Services\GeocodingService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
 class ListingService
 {
-    public function __construct(private RoleService $roleService)
+    public function __construct(
+        private RoleService $roleService,
+        private GeocodingService $geocodingService
+    )
     {
     }
 
@@ -35,7 +39,47 @@ class ListingService
             $query->where('guest_capacity', '>=', (int) $filters['min_guests']);
         }
 
+        if (! empty($filters['bounds'])) {
+            $bounds = $this->parseBounds($filters['bounds']);
+            $paddingKm = isset($filters['padding_km']) ? (float) $filters['padding_km'] : 0.0;
+
+            if ($bounds) {
+                [$swLng, $swLat, $neLng, $neLat] = $bounds;
+                if ($paddingKm > 0) {
+                    $centerLat = ($swLat + $neLat) / 2;
+                    $latPadding = $paddingKm / 111;
+                    $lngPadding = $paddingKm / max(1, (111 * cos(deg2rad($centerLat))));
+
+                    $swLat -= $latPadding;
+                    $neLat += $latPadding;
+                    $swLng -= $lngPadding;
+                    $neLng += $lngPadding;
+                }
+
+                $query->whereNotNull('latitude')
+                    ->whereNotNull('longitude')
+                    ->whereBetween('latitude', [$swLat, $neLat])
+                    ->whereBetween('longitude', [$swLng, $neLng]);
+            }
+        }
+
         return $query->paginate($perPage);
+    }
+
+    private function parseBounds(string $bounds): ?array
+    {
+        $parts = array_map('trim', explode(',', $bounds));
+        if (count($parts) !== 4) {
+            return null;
+        }
+
+        [$swLng, $swLat, $neLng, $neLat] = array_map('floatval', $parts);
+
+        if ($swLat > $neLat || $swLng > $neLng) {
+            return null;
+        }
+
+        return [$swLng, $swLat, $neLng, $neLat];
     }
 
     public function listForHost(User $user, array $filters = [], int $perPage = 12)
@@ -63,12 +107,26 @@ class ListingService
         Gate::authorize('create', Listing::class);
         $this->roleService->assignRole($host, 'host');
 
+        $fullAddress = $data['full_address'] ?? null;
+        $geoQuery = $fullAddress ?: trim($data['address'] . ', ' . $data['city']);
+
+        if (empty($data['latitude']) && empty($data['longitude'])) {
+            $coords = $this->geocodingService->geocode($geoQuery);
+            if ($coords) {
+                $data['latitude'] = $coords['lat'];
+                $data['longitude'] = $coords['lng'];
+            }
+        }
+
         return Listing::create([
             'host_user_id' => $host->id,
             'title' => $data['title'],
             'description' => $data['description'],
             'city' => $data['city'],
             'address' => $data['address'],
+            'full_address' => $fullAddress,
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
             'guest_capacity' => $data['guest_capacity'],
             'price_per_night' => $data['price_per_night'],
             'rules' => $data['rules'] ?? null,
@@ -79,6 +137,22 @@ class ListingService
     public function update(User $user, Listing $listing, array $data): Listing
     {
         Gate::authorize('update', $listing);
+
+        $shouldGeocode = array_key_exists('address', $data)
+            || array_key_exists('city', $data)
+            || array_key_exists('full_address', $data);
+
+        if ($shouldGeocode && ! array_key_exists('latitude', $data) && ! array_key_exists('longitude', $data)) {
+            $fullAddress = $data['full_address'] ?? $listing->full_address;
+            $address = $data['address'] ?? $listing->address;
+            $city = $data['city'] ?? $listing->city;
+            $geoQuery = $fullAddress ?: trim($address . ', ' . $city);
+            $coords = $this->geocodingService->geocode($geoQuery);
+            if ($coords) {
+                $data['latitude'] = $coords['lat'];
+                $data['longitude'] = $coords['lng'];
+            }
+        }
 
         $listing->fill($data)->save();
 

@@ -12,6 +12,7 @@ const form = ref({
   description: '',
   city: '',
   address: '',
+  full_address: '',
   guest_capacity: 1,
   price_per_night: 0,
   rules: '',
@@ -94,6 +95,7 @@ async function submit() {
       description: form.value.description,
       city: form.value.city,
       address: form.value.address,
+      full_address: form.value.full_address || null,
       guest_capacity: Number(form.value.guest_capacity),
       price_per_night: Number(form.value.price_per_night),
       rules: form.value.rules || null,
@@ -158,6 +160,19 @@ async function submit() {
           class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
           required
         />
+      </div>
+
+      <div class="space-y-2">
+        <label class="text-sm font-medium text-slate-700">Adresse complète</label>
+        <input
+          v-model="form.full_address"
+          type="text"
+          class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
+          placeholder="10 Rue de Rivoli, 75001 Paris, France"
+        />
+        <p class="text-xs text-slate-500">
+          Utilisée pour placer le logement sur la carte.
+        </p>
       </div>
 
       <div class="space-y-2">

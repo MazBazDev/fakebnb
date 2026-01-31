@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Database\Seeders\ListingSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -26,8 +27,23 @@ class DatabaseSeeder extends Seeder
         );
 
         User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            'name' => 'TestClient',
+            'email' => 'tc@t.fr',
+            'password' => bcrypt('password'),
         ]);
+
+        User::factory()->create([
+            'name' => 'TestHost',
+            'email' => 'th@t.fr',
+            'password' => bcrypt('password'),
+        ]);
+
+        User::factory()->create([
+            'name' => 'TestCoHost',
+            'email' => 'tch@t.fr',
+            'password' => bcrypt('password'),
+        ]);
+
+        $this->call(ListingSeeder::class);
     }
 }
