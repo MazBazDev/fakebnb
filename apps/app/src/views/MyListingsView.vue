@@ -173,9 +173,17 @@ watch(activeTab, () => {
             <span class="text-xs uppercase tracking-[0.2em] text-slate-400">
               {{ listing.city }}
             </span>
-            <span class="text-xs font-semibold text-slate-700">
-              {{ listing.price_per_night }} €/nuit
-            </span>
+            <div class="flex items-center gap-2">
+              <span
+                v-if="activeTab === 'cohost'"
+                class="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-700"
+              >
+                Co-hôte
+              </span>
+              <span class="text-xs font-semibold text-slate-700">
+                {{ listing.price_per_night }} €/nuit
+              </span>
+            </div>
           </div>
           <h2 class="text-lg font-semibold text-slate-900">{{ listing.title }}</h2>
           <p class="text-sm text-slate-500">
