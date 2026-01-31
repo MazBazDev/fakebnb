@@ -10,10 +10,7 @@ use Illuminate\Support\Facades\Storage;
 
 class ListingService
 {
-    public function __construct(
-        private RoleService $roleService,
-        private GeocodingService $geocodingService
-    )
+    public function __construct(private GeocodingService $geocodingService)
     {
     }
 
@@ -105,7 +102,6 @@ class ListingService
     public function create(User $host, array $data): Listing
     {
         Gate::authorize('create', Listing::class);
-        $this->roleService->assignRole($host, 'host');
 
         $fullAddress = $data['full_address'] ?? null;
         $geoQuery = $fullAddress ?: trim($data['address'] . ', ' . $data['city']);

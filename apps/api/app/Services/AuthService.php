@@ -13,7 +13,6 @@ class AuthService
     public function register(array $data): array
     {
         $user = User::create($data);
-        app(RoleService::class)->assignRole($user, 'client');
         $token = $this->issueToken($user);
 
         return [

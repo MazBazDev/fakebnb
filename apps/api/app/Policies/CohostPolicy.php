@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\Cohost;
+use App\Models\Listing;
 use App\Models\User;
 
 class CohostPolicy
@@ -29,6 +30,6 @@ class CohostPolicy
 
     private function isHost(User $user): bool
     {
-        return $user->roles()->where('name', 'host')->exists();
+        return Listing::query()->where('host_user_id', $user->id)->exists();
     }
 }
