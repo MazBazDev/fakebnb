@@ -70,19 +70,13 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   async function markRead(id: string) {
     await markNotificationRead(id)
-    items.value = items.value.map((item) =>
-      item.id === id ? { ...item, is_read: true, read_at: new Date().toISOString() } : item
-    )
+    items.value = items.value.filter((item) => item.id !== id)
     unreadCount.value = Math.max(0, unreadCount.value - 1)
   }
 
   async function markAllRead() {
     await markAllNotificationsRead()
-    items.value = items.value.map((item) => ({
-      ...item,
-      is_read: true,
-      read_at: item.read_at ?? new Date().toISOString(),
-    }))
+    items.value = []
     unreadCount.value = 0
   }
 
