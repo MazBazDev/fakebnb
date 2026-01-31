@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationsStore } from '@/stores/notifications'
 import { gravatarUrl } from '@/utils/gravatar'
+import NotificationBell from '@/components/NotificationBell.vue'
 
 const auth = useAuthStore()
+const notifications = useNotificationsStore()
 const route = useRoute()
 const isAuthed = computed(() => auth.isAuthenticated)
 const isHostRoute = computed(() => route.meta.layout === 'host')
 const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 const sidebarOpen = ref(false)
+let notificationInterval: number | null = null
 
 const avatarUrl = computed(() => {
   if (!auth.user) return null
@@ -60,7 +64,34 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  if (notificationInterval) {
+    window.clearInterval(notificationInterval)
+    notificationInterval = null
+  }
 })
+
+watch(
+  () => auth.user?.id,
+  (userId) => {
+    if (!userId) {
+      if (notificationInterval) {
+        window.clearInterval(notificationInterval)
+        notificationInterval = null
+      }
+      notifications.clear()
+      return
+    }
+    notifications.bindToUser(userId)
+    notifications.refreshUnreadCount()
+    notifications.hydrate()
+    if (!notificationInterval) {
+      notificationInterval = window.setInterval(() => {
+        notifications.refreshUnreadCount()
+      }, 20000)
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -73,6 +104,10 @@ onUnmounted(() => {
         <RouterLink to="/" class="text-sm font-semibold tracking-wide text-slate-900">
           MiniBnB
         </RouterLink>
+
+        <div class="mt-4 flex items-center">
+          <NotificationBell align="left" />
+        </div>
 
         <nav class="mt-8 flex flex-1 flex-col gap-2 text-sm text-slate-600">
           <RouterLink to="/host" class="rounded-xl px-3 py-2 hover:bg-slate-50">
@@ -123,13 +158,16 @@ onUnmounted(() => {
           <RouterLink to="/" class="text-sm font-semibold tracking-wide text-slate-900">
             MiniBnB
           </RouterLink>
-          <button
-            class="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold"
-            type="button"
-            @click="sidebarOpen = true"
-          >
-            Menu
-          </button>
+          <div class="flex items-center gap-3">
+            <NotificationBell />
+            <button
+              class="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold"
+              type="button"
+              @click="sidebarOpen = true"
+            >
+              Menu
+            </button>
+          </div>
         </header>
 
         <header v-else class="border-b border-slate-200 bg-white/80 backdrop-blur">
@@ -143,6 +181,7 @@ onUnmounted(() => {
               <RouterLink to="/listings" class="text-slate-600 hover:text-slate-900">
                 Annonces
               </RouterLink>
+              <NotificationBell v-if="isAuthed" />
               <RouterLink
                 v-if="isAuthed"
                 to="/host"

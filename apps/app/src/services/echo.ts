@@ -20,7 +20,7 @@ export function getEcho() {
     wssPort: Number(import.meta.env.VITE_REVERB_PORT ?? 443),
     forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'http') === 'https',
     enabledTransports: ['ws', 'wss'],
-    authEndpoint: import.meta.env.VITE_REVERB_AUTH_ENDPOINT,
+    authEndpoint: import.meta.env.VITE_REVERB_AUTH_ENDPOINT ?? '/broadcasting/auth',
     auth: {
       headers: {
         Authorization: token ? `Bearer ${token}` : '',
@@ -29,4 +29,20 @@ export function getEcho() {
   })
 
   return echoInstance
+}
+
+export function setEchoAuthToken(token: string | null) {
+  const echo = getEcho()
+  const headerValue = token ? `Bearer ${token}` : ''
+
+  echo.options.auth = {
+    headers: {
+      Authorization: headerValue,
+    },
+  }
+
+  const connector = echo.connector as { pusher?: { config?: { auth?: { headers?: any } } } }
+  if (connector?.pusher?.config?.auth?.headers) {
+    connector.pusher.config.auth.headers.Authorization = headerValue
+  }
 }

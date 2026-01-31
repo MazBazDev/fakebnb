@@ -6,9 +6,14 @@ use App\Models\Booking;
 use App\Models\Payment;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
+use App\Services\NotificationService;
 
 class PaymentService
 {
+    public function __construct(private NotificationService $notificationService)
+    {
+    }
+
     public function createIntent(Booking $booking, int $guestId): Payment
     {
         if ($booking->guest_user_id !== $guestId) {
@@ -82,6 +87,8 @@ class PaymentService
         $booking->save();
 
         \App\Events\BookingUpdated::dispatch($booking);
+        $this->notificationService->notifyBookingStatusForHost($booking);
+        $this->notificationService->notifyBookingStatusForGuest($booking);
 
         return $payment->fresh();
     }

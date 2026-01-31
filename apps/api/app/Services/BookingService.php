@@ -11,9 +11,14 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Auth\Access\AuthorizationException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use App\Services\NotificationService;
 
 class BookingService
 {
+    public function __construct(private NotificationService $notificationService)
+    {
+    }
+
     public function listForUser(User $user)
     {
         $hostListingIds = Listing::query()
@@ -80,6 +85,7 @@ class BookingService
         ]);
 
         BookingUpdated::dispatch($booking);
+        $this->notificationService->notifyBookingRequested($booking);
 
         return $booking;
     }
@@ -108,6 +114,7 @@ class BookingService
         $booking->save();
 
         BookingUpdated::dispatch($booking);
+        $this->notificationService->notifyBookingStatusForGuest($booking);
 
         return $booking->fresh();
     }
@@ -120,6 +127,7 @@ class BookingService
         $booking->save();
 
         BookingUpdated::dispatch($booking);
+        $this->notificationService->notifyBookingStatusForGuest($booking);
 
         return $booking->fresh();
     }
@@ -143,6 +151,11 @@ class BookingService
         }
 
         BookingUpdated::dispatch($booking->fresh()->load('payment'));
+        if ($guest->id === $booking->guest_user_id) {
+            $this->notificationService->notifyBookingStatusForHost($booking);
+        } else {
+            $this->notificationService->notifyBookingStatusForGuest($booking);
+        }
 
         return $booking->fresh()->load('payment');
     }

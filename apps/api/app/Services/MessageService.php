@@ -7,9 +7,14 @@ use App\Models\Message;
 use App\Models\User;
 use App\Events\MessageCreated;
 use Illuminate\Support\Facades\Gate;
+use App\Services\NotificationService;
 
 class MessageService
 {
+    public function __construct(private NotificationService $notificationService)
+    {
+    }
+
     public function listForConversation(User $user, Conversation $conversation)
     {
         Gate::authorize('view', $conversation);
@@ -29,6 +34,7 @@ class MessageService
 
         $message->loadMissing('sender');
         event(new MessageCreated($message));
+        $this->notificationService->notifyMessageReceived($message);
 
         return $message;
     }
