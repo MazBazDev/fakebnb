@@ -1,49 +1,21 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { fetchBookings, type Booking } from '@/services/bookings'
-import { fetchMyListings, type Listing } from '@/services/listings'
+import { fetchHostStats, type HostStats } from '@/services/hostStats'
 
 const auth = useAuthStore()
 const displayName = computed(() => auth.user?.name ?? auth.user?.email ?? 'Utilisateur')
-const bookings = ref<Booking[]>([])
-const listings = ref<Listing[]>([])
+const stats = ref<HostStats | null>(null)
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 
-const hostListingIds = computed(() => new Set(listings.value.map((listing) => listing.id)))
-const hostBookings = computed(() =>
-  bookings.value.filter((booking) => hostListingIds.value.has(booking.listing_id))
-)
-const pendingBookings = computed(() =>
-  hostBookings.value.filter((booking) => booking.status === 'pending')
-)
-const awaitingPaymentBookings = computed(() =>
-  hostBookings.value.filter((booking) => booking.status === 'awaiting_payment')
-)
-const confirmedBookings = computed(() =>
-  hostBookings.value.filter((booking) => booking.status === 'confirmed')
-)
-const totalPayout = computed(() => {
-  return confirmedBookings.value.reduce((sum, booking) => {
-    return sum + (booking.payment?.payout_amount ?? 0)
-  }, 0)
-})
-const upcomingArrivals = computed(() => {
-  const today = new Date()
-  return confirmedBookings.value
-    .filter((booking) => new Date(booking.start_date) >= today)
-    .sort((a, b) => a.start_date.localeCompare(b.start_date))
-    .slice(0, 3)
-})
-const recentBookings = computed(() => {
-  return [...hostBookings.value]
-    .sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
-    .slice(0, 4)
-})
+const upcomingArrivals = computed(() => stats.value?.upcoming_arrivals ?? [])
+const recentBookings = computed(() => stats.value?.recent_requests ?? [])
+const bookingSeries = computed(() => stats.value?.series.booking_counts ?? [])
+const payoutSeries = computed(() => stats.value?.series.payout_totals ?? [])
 
 function listingLabel(listingId: number) {
-  const listing = listings.value.find((item) => item.id === listingId)
+  const listing = stats.value?.recent_requests.find((item) => item.listing_id === listingId)?.listing
   return listing ? `${listing.title} — ${listing.city}` : `Annonce #${listingId}`
 }
 
@@ -51,17 +23,31 @@ function formatAmount(value: number) {
   return (value / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
 }
 
+function sparklinePoints(values: number[], width = 120, height = 32, padding = 4) {
+  if (values.length === 0) return ''
+  const max = Math.max(...values, 1)
+  const min = Math.min(...values, 0)
+  const range = max - min || 1
+  const step = values.length > 1 ? (width - padding * 2) / (values.length - 1) : 0
+  return values
+    .map((value, index) => {
+      const x = padding + index * step
+      const y = height - padding - ((value - min) / range) * (height - padding * 2)
+      return `${x},${y}`
+    })
+    .join(' ')
+}
+
+function latestSeriesValue(values: number[]) {
+  return values.length ? values[values.length - 1] : 0
+}
+
 async function loadDashboard() {
   isLoading.value = true
   error.value = null
 
   try {
-    const [bookingsData, listingsData] = await Promise.all([
-      fetchBookings(),
-      fetchMyListings(),
-    ])
-    bookings.value = bookingsData
-    listings.value = listingsData
+    stats.value = await fetchHostStats()
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Impossible de charger les statistiques.'
   } finally {
@@ -99,29 +85,72 @@ onMounted(loadDashboard)
       <div class="grid gap-4 md:grid-cols-4">
         <div class="rounded-2xl border border-slate-200 bg-white p-4">
           <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Annonces</p>
-          <p class="mt-2 text-2xl font-semibold text-slate-900">{{ listings.length }}</p>
+          <p class="mt-2 text-2xl font-semibold text-slate-900">
+            {{ stats?.listings_count ?? 0 }}
+          </p>
           <p class="text-xs text-slate-500">Actives actuellement</p>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-white p-4">
           <p class="text-xs uppercase tracking-[0.2em] text-slate-400">En attente</p>
           <p class="mt-2 text-2xl font-semibold text-slate-900">
-            {{ pendingBookings.length }}
+            {{ stats?.pending_count ?? 0 }}
           </p>
           <p class="text-xs text-slate-500">Demandes à traiter</p>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-white p-4">
           <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Paiements</p>
           <p class="mt-2 text-2xl font-semibold text-slate-900">
-            {{ awaitingPaymentBookings.length }}
+            {{ stats?.awaiting_payment_count ?? 0 }}
           </p>
           <p class="text-xs text-slate-500">En attente de paiement</p>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-white p-4">
           <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Revenus</p>
           <p class="mt-2 text-2xl font-semibold text-slate-900">
-            {{ formatAmount(totalPayout) }}
+            {{ formatAmount(stats?.total_payout ?? 0) }}
           </p>
           <p class="text-xs text-slate-500">Payouts confirmés</p>
+        </div>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="rounded-2xl border border-slate-200 bg-white p-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Réservations</p>
+              <p class="mt-2 text-xl font-semibold text-slate-900">
+                {{ latestSeriesValue(bookingSeries) }}
+              </p>
+              <p class="text-xs text-slate-500">Ce mois-ci</p>
+            </div>
+            <svg width="140" height="40" viewBox="0 0 140 40" class="text-slate-300">
+              <polyline
+                :points="sparklinePoints(bookingSeries, 140, 40, 6)"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+            </svg>
+          </div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Revenu attendu</p>
+              <p class="mt-2 text-xl font-semibold text-slate-900">
+                {{ formatAmount(latestSeriesValue(payoutSeries)) }}
+              </p>
+              <p class="text-xs text-slate-500">Ce mois-ci</p>
+            </div>
+            <svg width="140" height="40" viewBox="0 0 140 40" class="text-emerald-300">
+              <polyline
+                :points="sparklinePoints(payoutSeries, 140, 40, 6)"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+            </svg>
+          </div>
         </div>
       </div>
 

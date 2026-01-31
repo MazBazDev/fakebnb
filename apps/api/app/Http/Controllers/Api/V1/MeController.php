@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Profile\UpdateProfileRequest;
 use App\Services\ProfileService;
 use App\Services\ListingService;
+use App\Services\HostStatsService;
 use Illuminate\Http\Request;
 
 class MeController extends Controller
@@ -25,6 +26,13 @@ class MeController extends Controller
     {
         return \App\Http\Resources\ListingResource::collection(
             $listingService->listForHost($request->user())
+        );
+    }
+
+    public function hostStats(Request $request, HostStatsService $hostStatsService)
+    {
+        return response()->json(
+            $hostStatsService->forUser($request->user())
         );
     }
 }
