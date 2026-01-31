@@ -89,6 +89,7 @@ class PaymentService
         \App\Events\BookingUpdated::dispatch($booking);
         $this->notificationService->notifyBookingStatusForHost($booking);
         $this->notificationService->notifyBookingStatusForGuest($booking);
+        $this->notificationService->notifyPaymentCaptured($payment);
 
         return $payment->fresh();
     }

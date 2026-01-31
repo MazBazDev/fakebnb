@@ -5,10 +5,14 @@ namespace App\Services;
 use App\Models\Booking;
 use App\Models\Cohost;
 use App\Models\Message;
+use App\Models\Payment;
 use App\Models\User;
 use App\Notifications\BookingRequestedNotification;
 use App\Notifications\BookingStatusChangedNotification;
 use App\Notifications\MessageReceivedNotification;
+use App\Notifications\PaymentCapturedNotification;
+use App\Notifications\PaymentRefundedNotification;
+use App\Notifications\WelcomeNotification;
 
 class NotificationService
 {
@@ -64,6 +68,11 @@ class NotificationService
                     $sender?->name ?? 'Nouveau message'
                 ));
             });
+    }
+
+    public function notifyWelcome(User $user): void
+    {
+        $user->notify(new WelcomeNotification($user->name ?? ''));
     }
 
     public function notifyBookingRequested(Booking $booking): void
@@ -130,5 +139,67 @@ class NotificationService
             ->filter()
             ->unique('id')
             ->each(fn (User $recipient) => $recipient->notify(new BookingStatusChangedNotification($booking, true)));
+    }
+
+    public function notifyPaymentCaptured(Payment $payment): void
+    {
+        $payment->loadMissing(['booking.listing.host', 'booking.guest']);
+        $booking = $payment->booking;
+        $listing = $booking?->listing;
+        $guest = $booking?->guest;
+
+        if (! $listing || ! $guest) {
+            return;
+        }
+
+        $recipients = collect([$guest, $listing->host]);
+
+        $cohostIds = Cohost::query()
+            ->where('listing_id', $listing->id)
+            ->where('can_edit_listings', true)
+            ->pluck('cohost_user_id');
+
+        if ($cohostIds->isNotEmpty()) {
+            $recipients = $recipients->merge(User::query()->whereIn('id', $cohostIds)->get());
+        }
+
+        $recipients
+            ->filter()
+            ->unique('id')
+            ->each(function (User $recipient) use ($payment, $guest) {
+                $isHostRecipient = $recipient->id !== $guest->id;
+                $recipient->notify(new PaymentCapturedNotification($payment, $isHostRecipient));
+            });
+    }
+
+    public function notifyPaymentRefunded(Payment $payment): void
+    {
+        $payment->loadMissing(['booking.listing.host', 'booking.guest']);
+        $booking = $payment->booking;
+        $listing = $booking?->listing;
+        $guest = $booking?->guest;
+
+        if (! $listing || ! $guest) {
+            return;
+        }
+
+        $recipients = collect([$guest, $listing->host]);
+
+        $cohostIds = Cohost::query()
+            ->where('listing_id', $listing->id)
+            ->where('can_edit_listings', true)
+            ->pluck('cohost_user_id');
+
+        if ($cohostIds->isNotEmpty()) {
+            $recipients = $recipients->merge(User::query()->whereIn('id', $cohostIds)->get());
+        }
+
+        $recipients
+            ->filter()
+            ->unique('id')
+            ->each(function (User $recipient) use ($payment, $guest) {
+                $isHostRecipient = $recipient->id !== $guest->id;
+                $recipient->notify(new PaymentRefundedNotification($payment, $isHostRecipient));
+            });
     }
 }

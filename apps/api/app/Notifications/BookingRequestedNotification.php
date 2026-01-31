@@ -7,6 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Notifications\Messages\MailMessage;
 
 class BookingRequestedNotification extends Notification implements ShouldBroadcastNow
 {
@@ -18,7 +19,7 @@ class BookingRequestedNotification extends Notification implements ShouldBroadca
 
     public function via(object $notifiable): array
     {
-        return ['database', 'broadcast'];
+        return ['database', 'broadcast', 'mail'];
     }
 
     public function toArray(object $notifiable): array
@@ -29,6 +30,22 @@ class BookingRequestedNotification extends Notification implements ShouldBroadca
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
         return new BroadcastMessage($this->payload());
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        $listing = $this->booking->listing;
+        $guest = $this->booking->guest;
+
+        return (new MailMessage())
+            ->subject('Nouvelle réservation')
+            ->line(($guest?->name ?? 'Un voyageur') . ' souhaite réserver votre logement.')
+            ->line('Logement : ' . ($listing?->title ?? 'Votre annonce'))
+            ->line(sprintf(
+                'Dates : %s → %s',
+                optional($this->booking->start_date)->format('d/m/Y'),
+                optional($this->booking->end_date)->format('d/m/Y')
+            ));
     }
 
     private function payload(): array

@@ -7,13 +7,19 @@ use App\Models\User;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use App\Services\NotificationService;
 
 class AuthService
 {
+    public function __construct(private NotificationService $notificationService)
+    {
+    }
+
     public function register(array $data): array
     {
         $user = User::create($data);
         $token = $this->issueToken($user);
+        $this->notificationService->notifyWelcome($user);
 
         return [
             'token' => $token,

@@ -148,6 +148,7 @@ class BookingService
             $payment->status = 'refunded';
             $payment->refunded_at = now();
             $payment->save();
+            $this->notificationService->notifyPaymentRefunded($payment);
         }
 
         BookingUpdated::dispatch($booking->fresh()->load('payment'));
