@@ -13,6 +13,13 @@ class MessageResource extends JsonResource
             'id' => $this->id,
             'conversation_id' => $this->conversation_id,
             'sender_user_id' => $this->sender_user_id,
+            'sender' => $this->whenLoaded('sender', function () {
+                return [
+                    'id' => $this->sender->id,
+                    'name' => $this->sender->name,
+                    'profile_photo_url' => $this->sender->profile_photo_url,
+                ];
+            }),
             'body' => $this->body,
             'created_at' => $this->created_at?->toIso8601String(),
         ];

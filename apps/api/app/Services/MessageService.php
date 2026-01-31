@@ -14,7 +14,7 @@ class MessageService
     {
         Gate::authorize('view', $conversation);
 
-        return $conversation->messages()->latest()->get();
+        return $conversation->messages()->with('sender')->latest()->get();
     }
 
     public function create(User $user, Conversation $conversation, string $body): Message
@@ -27,6 +27,7 @@ class MessageService
             'body' => $body,
         ]);
 
+        $message->loadMissing('sender');
         event(new MessageCreated($message));
 
         return $message;

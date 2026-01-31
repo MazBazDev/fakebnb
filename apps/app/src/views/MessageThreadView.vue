@@ -133,7 +133,11 @@ onUnmounted(() => {
           {{ message.body }}
         </div>
         <p class="mt-1 text-xs text-slate-400">
-          {{ message.sender_user_id === currentUserId ? 'Vous' : 'Utilisateur #' + message.sender_user_id }}
+          {{
+            message.sender_user_id === currentUserId
+              ? 'Vous'
+              : message.sender?.name ?? 'Utilisateur'
+          }}
         </p>
       </div>
     </div>

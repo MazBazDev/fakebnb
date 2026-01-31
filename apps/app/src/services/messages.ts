@@ -4,6 +4,11 @@ export type Message = {
   id: number
   conversation_id: number
   sender_user_id: number
+  sender?: {
+    id: number
+    name: string
+    profile_photo_url?: string | null
+  }
   body: string
   created_at?: string | null
 }
