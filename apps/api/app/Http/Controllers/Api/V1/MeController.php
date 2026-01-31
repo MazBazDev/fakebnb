@@ -31,6 +31,15 @@ class MeController extends Controller
         );
     }
 
+    public function cohostListings(Request $request, ListingService $listingService)
+    {
+        $perPage = (int) $request->query('per_page', 12);
+
+        return \App\Http\Resources\ListingResource::collection(
+            $listingService->listForCohost($request->user(), $request->only('search'), $perPage)
+        );
+    }
+
     public function hostStats(Request $request, HostStatsService $hostStatsService)
     {
         return response()->json(

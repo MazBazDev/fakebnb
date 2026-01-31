@@ -46,4 +46,9 @@ class Listing extends Model
     {
         return $this->hasMany(ListingImage::class)->orderBy('position');
     }
+
+    public function cohosts(): HasMany
+    {
+        return $this->hasMany(Cohost::class);
+    }
 }

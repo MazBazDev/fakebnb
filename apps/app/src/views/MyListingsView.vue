@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import { deleteListing, fetchMyListings, type Listing } from '@/services/listings'
+import {
+  deleteListing,
+  fetchCohostListings,
+  fetchMyListings,
+  type Listing,
+} from '@/services/listings'
 
 const listings = ref<Listing[]>([])
 const isLoading = ref(false)
@@ -13,6 +18,8 @@ const page = ref(1)
 const perPage = ref(9)
 const lastPage = ref(1)
 let searchTimeout: number | null = null
+const activeTab = ref<'host' | 'cohost'>('host')
+const total = ref(0)
 
 const filteredListings = computed(() => listings.value)
 
@@ -21,13 +28,21 @@ async function load() {
   error.value = null
 
   try {
-    const response = await fetchMyListings({
-      search: search.value || undefined,
-      page: page.value,
-      per_page: perPage.value,
-    })
+    const response =
+      activeTab.value === 'host'
+        ? await fetchMyListings({
+            search: search.value || undefined,
+            page: page.value,
+            per_page: perPage.value,
+          })
+        : await fetchCohostListings({
+            search: search.value || undefined,
+            page: page.value,
+            per_page: perPage.value,
+          })
     listings.value = response.data
     lastPage.value = response.meta?.last_page ?? 1
+    total.value = response.meta?.total ?? response.data.length
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Impossible de charger vos annonces.'
   } finally {
@@ -69,6 +84,11 @@ watch(search, () => {
 watch(page, () => {
   load()
 })
+
+watch(activeTab, () => {
+  page.value = 1
+  load()
+})
 </script>
 
 <template>
@@ -79,6 +99,7 @@ watch(page, () => {
         <h1 class="text-3xl font-semibold text-slate-900">Vos logements publiés</h1>
       </div>
       <RouterLink
+        v-if="activeTab === 'host'"
         to="/host/listings/new"
         class="inline-flex rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
       >
@@ -94,7 +115,31 @@ watch(page, () => {
     </div>
 
     <div class="rounded-2xl border border-slate-200 bg-white p-4">
-      <label class="text-xs font-semibold text-slate-600">Rechercher une annonce</label>
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div
+          class="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1 text-xs font-semibold text-slate-600"
+        >
+          <button
+            class="rounded-full px-4 py-2"
+            :class="activeTab === 'host' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+            type="button"
+            @click="activeTab = 'host'"
+          >
+            Mes annonces
+          </button>
+          <button
+            class="rounded-full px-4 py-2"
+            :class="activeTab === 'cohost' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+            type="button"
+            @click="activeTab = 'cohost'"
+          >
+            Co-hôte
+          </button>
+        </div>
+        <span class="text-xs text-slate-500">{{ total }} annonce(s)</span>
+      </div>
+
+      <label class="mt-4 block text-xs font-semibold text-slate-600">Rechercher une annonce</label>
       <input
         v-model="search"
         type="search"
@@ -156,16 +201,25 @@ watch(page, () => {
           <RouterLink
             :to="`/host/listings/${listing.id}/messages`"
             class="text-slate-600 hover:text-slate-900"
+            v-if="
+              activeTab === 'host' ||
+              (listing.cohost_permissions && listing.cohost_permissions.can_read_conversations)
+            "
           >
             Messagerie
           </RouterLink>
           <RouterLink
+            v-if="
+              activeTab === 'host' ||
+              (listing.cohost_permissions && listing.cohost_permissions.can_edit_listings)
+            "
             :to="`/host/listings/${listing.id}/edit`"
             class="text-slate-600 hover:text-slate-900"
           >
             Modifier
           </RouterLink>
           <button
+            v-if="activeTab === 'host'"
             class="text-rose-600 hover:text-rose-700 disabled:opacity-60"
             type="button"
             :disabled="deleteBusy.includes(listing.id)"

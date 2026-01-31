@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Listing;
 use App\Models\User;
+use App\Models\Cohost;
 use App\Services\GeocodingService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -84,6 +85,35 @@ class ListingService
         $query = Listing::query()
             ->with('images')
             ->where('host_user_id', $user->id)
+            ->latest();
+
+        if (! empty($filters['search'])) {
+            $term = $filters['search'];
+            $query->where(function ($builder) use ($term) {
+                $builder->where('title', 'like', "%{$term}%")
+                    ->orWhere('description', 'like', "%{$term}%")
+                    ->orWhere('city', 'like', "%{$term}%")
+                    ->orWhere('address', 'like', "%{$term}%");
+            });
+        }
+
+        return $query->paginate($perPage);
+    }
+
+    public function listForCohost(User $user, array $filters = [], int $perPage = 12)
+    {
+        $listingIds = Cohost::query()
+            ->where('cohost_user_id', $user->id)
+            ->pluck('listing_id');
+
+        $query = Listing::query()
+            ->with([
+                'images',
+                'cohosts' => function ($builder) use ($user) {
+                    $builder->where('cohost_user_id', $user->id);
+                },
+            ])
+            ->whereIn('id', $listingIds)
             ->latest();
 
         if (! empty($filters['search'])) {

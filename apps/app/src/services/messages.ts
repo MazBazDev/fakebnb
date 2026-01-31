@@ -13,12 +13,12 @@ export type Message = {
   created_at?: string | null
 }
 
-type MessagesResponse = { data: Message[] }
+type MessagesResponse = { data: Message[]; meta?: { can_reply?: boolean } }
 type MessageResponse = { data: Message }
 
 export async function fetchMessages(conversationId: number) {
   const response = await apiFetch<MessagesResponse>(`/conversations/${conversationId}/messages`)
-  return response.data
+  return response
 }
 
 export async function sendMessage(conversationId: number, body: string) {

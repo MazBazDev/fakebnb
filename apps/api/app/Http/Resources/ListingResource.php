@@ -14,6 +14,7 @@ class ListingResource extends JsonResource
         $user = $request->user();
         $canBook = true;
         $conversationId = null;
+        $cohostPermissions = null;
         if ($user && $request->route()?->parameter('listing')) {
             $isHost = $this->host_user_id === $user->id;
             $isCohost = Cohost::query()
@@ -26,6 +27,17 @@ class ListingResource extends JsonResource
                 ->where('listing_id', $this->id)
                 ->where('guest_user_id', $user->id)
                 ->value('id');
+        }
+
+        if ($user && $this->relationLoaded('cohosts')) {
+            $cohost = $this->cohosts->first();
+            if ($cohost) {
+                $cohostPermissions = [
+                    'can_read_conversations' => (bool) $cohost->can_read_conversations,
+                    'can_reply_messages' => (bool) $cohost->can_reply_messages,
+                    'can_edit_listings' => (bool) $cohost->can_edit_listings,
+                ];
+            }
         }
 
         return [
@@ -51,6 +63,7 @@ class ListingResource extends JsonResource
             'amenities' => $this->amenities ?? [],
             'can_book' => $request->route()?->parameter('listing') ? $canBook : null,
             'conversation_id' => $request->route()?->parameter('listing') ? $conversationId : null,
+            'cohost_permissions' => $cohostPermissions,
             'images' => $this->whenLoaded('images', function () {
                 return $this->images->map(function ($image) {
                     return [

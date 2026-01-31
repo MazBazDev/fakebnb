@@ -21,6 +21,11 @@ export type Listing = {
   amenities?: string[]
   can_book?: boolean | null
   conversation_id?: number | null
+  cohost_permissions?: {
+    can_read_conversations: boolean
+    can_reply_messages: boolean
+    can_edit_listings: boolean
+  } | null
   images?: ListingImage[]
   created_at?: string | null
 }
@@ -82,6 +87,23 @@ export async function fetchMyListings(filters?: {
 
   const query = params.toString()
   const response = await apiFetch<ListingsResponse>(`/me/listings${query ? `?${query}` : ''}`)
+  return response
+}
+
+export async function fetchCohostListings(filters?: {
+  search?: string
+  page?: number
+  per_page?: number
+}) {
+  const params = new URLSearchParams()
+  if (filters?.search) params.set('search', filters.search)
+  if (filters?.page) params.set('page', String(filters.page))
+  if (filters?.per_page) params.set('per_page', String(filters.per_page))
+
+  const query = params.toString()
+  const response = await apiFetch<ListingsResponse>(
+    `/me/cohost-listings${query ? `?${query}` : ''}`
+  )
   return response
 }
 

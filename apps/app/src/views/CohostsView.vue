@@ -27,9 +27,17 @@ async function load() {
   error.value = null
 
   try {
-    const [cohostsData, listingsResponse] = await Promise.all([fetchCohosts(), fetchMyListings()])
-    cohosts.value = cohostsData
+    const listingsResponse = await fetchMyListings({ per_page: 1 })
     listings.value = listingsResponse.data ?? []
+    const totalListings = listingsResponse.meta?.total ?? listingsResponse.data.length
+
+    if (totalListings === 0) {
+      error.value = 'Accès réservé aux hôtes ayant des annonces.'
+      return
+    }
+
+    const cohostsData = await fetchCohosts()
+    cohosts.value = cohostsData
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Impossible de charger les co-hôtes.'
   } finally {

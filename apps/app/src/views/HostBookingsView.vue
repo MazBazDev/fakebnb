@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { cancelBooking, confirmBooking, fetchBookings, rejectBooking, type Booking } from '@/services/bookings'
 import { createConversation } from '@/services/conversations'
 import { useRouter } from 'vue-router'
-import { fetchMyListings, type Listing } from '@/services/listings'
+import { fetchCohostListings, fetchMyListings, type Listing } from '@/services/listings'
 import { getEcho } from '@/services/echo'
 import { useAuthStore } from '@/stores/auth'
 
@@ -18,9 +18,20 @@ const auth = useAuthStore()
 const router = useRouter()
 const bookingChannel = ref<string | null>(null)
 
-const hostBookingIds = computed(() => new Set(listings.value.map((listing) => listing.id)))
+const listingPermissions = computed(() => {
+  const map = new Map<number, { can_edit_listings: boolean }>()
+  listings.value.forEach((listing) => {
+    const canEdit = listing.cohost_permissions
+      ? listing.cohost_permissions.can_edit_listings
+      : true
+    map.set(listing.id, { can_edit_listings: canEdit })
+  })
+  return map
+})
+
+const accessibleListingIds = computed(() => new Set(listingPermissions.value.keys()))
 const hostBookings = computed(() =>
-  bookings.value.filter((booking) => hostBookingIds.value.has(booking.listing_id))
+  bookings.value.filter((booking) => accessibleListingIds.value.has(booking.listing_id))
 )
 
 async function load() {
@@ -28,12 +39,19 @@ async function load() {
   error.value = null
 
   try {
-    const [bookingsData, listingsResponse] = await Promise.all([
+    const [bookingsData, hostListingsResponse, cohostListingsResponse] = await Promise.all([
       fetchBookings(),
-      fetchMyListings(),
+      fetchMyListings({ per_page: 100 }),
+      fetchCohostListings({ per_page: 100 }),
     ])
     bookings.value = bookingsData
-    listings.value = listingsResponse.data ?? []
+    const combined = [
+      ...(hostListingsResponse.data ?? []),
+      ...(cohostListingsResponse.data ?? []),
+    ]
+    const uniqueById = new Map<number, Listing>()
+    combined.forEach((listing) => uniqueById.set(listing.id, listing))
+    listings.value = Array.from(uniqueById.values())
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Impossible de charger les réservations.'
   } finally {
@@ -62,6 +80,11 @@ function statusClass(status: Booking['status']) {
   if (status === 'cancelled') return 'bg-slate-100 text-slate-600 border-slate-200'
   if (status === 'rejected') return 'bg-rose-50 text-rose-600 border-rose-100'
   return 'bg-amber-50 text-amber-600 border-amber-100'
+}
+
+function canManageBooking(booking: Booking) {
+  const permission = listingPermissions.value.get(booking.listing_id)
+  return permission?.can_edit_listings ?? false
 }
 
 async function updateStatus(booking: Booking, action: 'confirm' | 'reject') {
@@ -202,7 +225,7 @@ onUnmounted(() => {
               Contacter le voyageur
             </button>
             <button
-              v-if="booking.status !== 'cancelled' && booking.status !== 'completed'"
+              v-if="canManageBooking(booking) && booking.status !== 'cancelled' && booking.status !== 'completed'"
               class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 disabled:opacity-60"
               type="button"
               :disabled="cancelBusy.includes(booking.id)"
@@ -211,7 +234,7 @@ onUnmounted(() => {
               {{ cancelBusy.includes(booking.id) ? 'Annulation...' : 'Annuler' }}
             </button>
             <button
-              v-if="booking.status === 'pending'"
+              v-if="canManageBooking(booking) && booking.status === 'pending'"
               class="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
               type="button"
               :disabled="busyIds.includes(booking.id)"
@@ -220,7 +243,7 @@ onUnmounted(() => {
               Confirmer
             </button>
             <button
-              v-if="booking.status === 'pending'"
+              v-if="canManageBooking(booking) && booking.status === 'pending'"
               class="rounded-full border border-rose-200 px-4 py-2 text-xs font-semibold text-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
               type="button"
               :disabled="busyIds.includes(booking.id)"

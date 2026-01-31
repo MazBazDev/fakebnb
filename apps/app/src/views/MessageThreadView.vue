@@ -15,6 +15,7 @@ const channelName = ref<string | null>(null)
 const threadRef = ref<HTMLDivElement | null>(null)
 const auth = useAuthStore()
 const currentUserId = computed(() => auth.user?.id ?? null)
+const canReply = ref(true)
 const messagesPath = computed(() => {
   if (route.meta.layout === 'host') {
     const listingId = route.query.listing
@@ -29,8 +30,9 @@ async function load() {
 
   try {
     const id = Number(route.params.id)
-    const data = await fetchMessages(id)
-    messages.value = data.slice().reverse()
+    const response = await fetchMessages(id)
+    messages.value = response.data.slice().reverse()
+    canReply.value = response.meta?.can_reply ?? true
     await nextTick()
     scrollToBottom()
   } catch (err) {
@@ -146,6 +148,12 @@ onUnmounted(() => {
       class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
       @submit.prevent="submit"
     >
+      <div
+        v-if="!canReply"
+        class="mb-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700"
+      >
+        Vous n’avez pas la permission d’envoyer des messages pour cette annonce.
+      </div>
       <div class="flex flex-col gap-3 md:flex-row md:items-end">
         <div class="flex-1">
           <label class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -155,12 +163,13 @@ onUnmounted(() => {
             v-model="form.body"
             rows="2"
             class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-2 text-sm"
+            :disabled="!canReply"
             required
           ></textarea>
         </div>
         <button
           class="rounded-full bg-slate-900 px-6 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || !canReply"
           type="submit"
         >
           {{ isSubmitting ? 'Envoi...' : 'Envoyer' }}

@@ -35,6 +35,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::patch('/me/profile', [MeController::class, 'updateProfile']);
         Route::get('/me/listings', [MeController::class, 'myListings']);
+        Route::get('/me/cohost-listings', [MeController::class, 'cohostListings']);
         Route::get('/me/host-stats', [MeController::class, 'hostStats']);
 
         Route::get('/bookings', [BookingController::class, 'index']);
