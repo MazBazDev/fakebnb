@@ -12,6 +12,7 @@ const search = ref('')
 const page = ref(1)
 const perPage = ref(9)
 const lastPage = ref(1)
+let searchTimeout: number | null = null
 
 const filteredListings = computed(() => listings.value)
 
@@ -57,7 +58,12 @@ onMounted(load)
 
 watch(search, () => {
   page.value = 1
-  load()
+  if (searchTimeout) {
+    window.clearTimeout(searchTimeout)
+  }
+  searchTimeout = window.setTimeout(() => {
+    load()
+  }, 350)
 })
 
 watch(page, () => {
