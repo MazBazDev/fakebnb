@@ -27,9 +27,9 @@ async function load() {
   error.value = null
 
   try {
-    const [cohostsData, listingsData] = await Promise.all([fetchCohosts(), fetchMyListings()])
+    const [cohostsData, listingsResponse] = await Promise.all([fetchCohosts(), fetchMyListings()])
     cohosts.value = cohostsData
-    listings.value = listingsData
+    listings.value = listingsResponse.data ?? []
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Impossible de charger les co-hôtes.'
   } finally {
