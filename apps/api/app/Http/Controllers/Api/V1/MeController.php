@@ -24,8 +24,10 @@ class MeController extends Controller
 
     public function myListings(Request $request, ListingService $listingService)
     {
+        $perPage = (int) $request->query('per_page', 12);
+
         return \App\Http\Resources\ListingResource::collection(
-            $listingService->listForHost($request->user())
+            $listingService->listForHost($request->user(), $request->only('search'), $perPage)
         );
     }
 

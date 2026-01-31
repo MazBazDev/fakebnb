@@ -63,9 +63,19 @@ export async function fetchListing(id: number) {
   return response.data
 }
 
-export async function fetchMyListings() {
-  const response = await apiFetch<ListingsResponse>('/me/listings')
-  return response.data
+export async function fetchMyListings(filters?: {
+  search?: string
+  page?: number
+  per_page?: number
+}) {
+  const params = new URLSearchParams()
+  if (filters?.search) params.set('search', filters.search)
+  if (filters?.page) params.set('page', String(filters.page))
+  if (filters?.per_page) params.set('per_page', String(filters.per_page))
+
+  const query = params.toString()
+  const response = await apiFetch<ListingsResponse>(`/me/listings${query ? `?${query}` : ''}`)
+  return response
 }
 
 export async function createListing(

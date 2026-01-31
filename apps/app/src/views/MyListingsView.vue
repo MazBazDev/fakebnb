@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { deleteListing, fetchMyListings, type Listing } from '@/services/listings'
 
@@ -8,13 +8,25 @@ const isLoading = ref(false)
 const error = ref<string | null>(null)
 const deleteBusy = ref<number[]>([])
 const deleteError = ref<string | null>(null)
+const search = ref('')
+const page = ref(1)
+const perPage = ref(9)
+const lastPage = ref(1)
+
+const filteredListings = computed(() => listings.value)
 
 async function load() {
   isLoading.value = true
   error.value = null
 
   try {
-    listings.value = await fetchMyListings()
+    const response = await fetchMyListings({
+      search: search.value || undefined,
+      page: page.value,
+      per_page: perPage.value,
+    })
+    listings.value = response.data
+    lastPage.value = response.meta?.last_page ?? 1
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Impossible de charger vos annonces.'
   } finally {
@@ -30,6 +42,10 @@ async function removeListing(listing: Listing) {
   try {
     await deleteListing(listing.id)
     listings.value = listings.value.filter((item) => item.id !== listing.id)
+    if (listings.value.length === 0 && page.value > 1) {
+      page.value -= 1
+      await load()
+    }
   } catch (err) {
     deleteError.value = err instanceof Error ? err.message : 'Impossible de supprimer l’annonce.'
   } finally {
@@ -38,6 +54,15 @@ async function removeListing(listing: Listing) {
 }
 
 onMounted(load)
+
+watch(search, () => {
+  page.value = 1
+  load()
+})
+
+watch(page, () => {
+  load()
+})
 </script>
 
 <template>
@@ -62,6 +87,16 @@ onMounted(load)
       {{ deleteError }}
     </div>
 
+    <div class="rounded-2xl border border-slate-200 bg-white p-4">
+      <label class="text-xs font-semibold text-slate-600">Rechercher une annonce</label>
+      <input
+        v-model="search"
+        type="search"
+        placeholder="Titre, ville, description..."
+        class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400"
+      />
+    </div>
+
     <div
       v-if="isLoading"
       class="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500"
@@ -70,15 +105,15 @@ onMounted(load)
     </div>
 
     <div
-      v-else-if="listings.length === 0"
+      v-else-if="filteredListings.length === 0"
       class="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500"
     >
-      Vous n’avez pas encore publié d’annonce.
+      Aucune annonce ne correspond à votre recherche.
     </div>
 
     <div v-else class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
       <article
-        v-for="listing in listings"
+        v-for="listing in filteredListings"
         :key="listing.id"
         class="group flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
       >
@@ -134,6 +169,29 @@ onMounted(load)
           </button>
         </div>
       </article>
+    </div>
+
+    <div
+      v-if="lastPage > 1"
+      class="flex flex-wrap items-center justify-center gap-3 text-xs font-semibold text-slate-600"
+    >
+      <button
+        class="rounded-full border border-slate-200 px-4 py-2 disabled:opacity-50"
+        type="button"
+        :disabled="page <= 1"
+        @click="page -= 1"
+      >
+        Précédent
+      </button>
+      <span>Page {{ page }} / {{ lastPage }}</span>
+      <button
+        class="rounded-full border border-slate-200 px-4 py-2 disabled:opacity-50"
+        type="button"
+        :disabled="page >= lastPage"
+        @click="page += 1"
+      >
+        Suivant
+      </button>
     </div>
   </section>
 </template>

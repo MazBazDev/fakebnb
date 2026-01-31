@@ -38,13 +38,24 @@ class ListingService
         return $query->paginate($perPage);
     }
 
-    public function listForHost(User $user)
+    public function listForHost(User $user, array $filters = [], int $perPage = 12)
     {
-        return Listing::query()
+        $query = Listing::query()
             ->with('images')
             ->where('host_user_id', $user->id)
-            ->latest()
-            ->get();
+            ->latest();
+
+        if (! empty($filters['search'])) {
+            $term = $filters['search'];
+            $query->where(function ($builder) use ($term) {
+                $builder->where('title', 'like', "%{$term}%")
+                    ->orWhere('description', 'like', "%{$term}%")
+                    ->orWhere('city', 'like', "%{$term}%")
+                    ->orWhere('address', 'like', "%{$term}%");
+            });
+        }
+
+        return $query->paginate($perPage);
     }
 
     public function create(User $host, array $data): Listing
