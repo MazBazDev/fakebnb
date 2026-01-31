@@ -83,28 +83,3 @@ it('revokes the token on logout', function () {
         'token_hash' => hash('sha256', 'logout-token'),
     ]);
 });
-
-it('promotes a user to host role', function () {
-    $user = User::factory()->create();
-    ApiToken::create([
-        'user_id' => $user->id,
-        'token_hash' => hash('sha256', 'host-token'),
-    ]);
-
-    $response = $this->withHeader('Authorization', 'Bearer host-token')
-        ->postJson('/api/v1/me/host');
-
-    $response->assertOk()
-        ->assertJson(['message' => 'Rôle hôte activé.']);
-
-    $this->assertDatabaseHas('roles', [
-        'name' => 'host',
-    ]);
-
-    $hostRoleId = \App\Models\Role::where('name', 'host')->value('id');
-
-    $this->assertDatabaseHas('role_user', [
-        'user_id' => $user->id,
-        'role_id' => $hostRoleId,
-    ]);
-});

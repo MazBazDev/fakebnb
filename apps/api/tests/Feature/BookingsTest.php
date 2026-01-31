@@ -3,7 +3,6 @@
 use App\Models\ApiToken;
 use App\Models\Booking;
 use App\Models\Listing;
-use App\Models\Role;
 use App\Models\User;
 
 function authHeaderForBooking(User $user, string $plainToken): array
@@ -19,8 +18,6 @@ function authHeaderForBooking(User $user, string $plainToken): array
 function hostWithListing(): array
 {
     $host = User::factory()->create();
-    $role = Role::firstOrCreate(['name' => 'host'], ['label' => 'Hôte']);
-    $host->roles()->attach($role);
 
     $listing = Listing::create([
         'host_user_id' => $host->id,
@@ -187,7 +184,7 @@ it('prevents cohost from booking the listing', function () {
     $response->assertStatus(403);
 });
 
-it('allows host to confirm a booking', function () {
+it('moves a booking to awaiting payment when host confirms', function () {
     [$host, $listing] = hostWithListing();
     $guest = User::factory()->create();
     $booking = Booking::create([
@@ -203,7 +200,7 @@ it('allows host to confirm a booking', function () {
     $response = $this->patchJson("/api/v1/bookings/{$booking->id}/confirm", [], $headers);
 
     $response->assertOk()
-        ->assertJsonPath('data.status', 'confirmed');
+        ->assertJsonPath('data.status', 'awaiting_payment');
 });
 
 it('allows host to reject a booking', function () {

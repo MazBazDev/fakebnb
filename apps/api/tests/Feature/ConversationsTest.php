@@ -2,7 +2,6 @@
 
 use App\Models\ApiToken;
 use App\Models\Listing;
-use App\Models\Role;
 use App\Models\User;
 
 function authHeaderForConversation(User $user, string $plainToken): array
@@ -18,8 +17,6 @@ function authHeaderForConversation(User $user, string $plainToken): array
 function hostWithListingForConversation(): array
 {
     $host = User::factory()->create();
-    $role = Role::firstOrCreate(['name' => 'host'], ['label' => 'Hôte']);
-    $host->roles()->attach($role);
 
     $listing = Listing::create([
         'host_user_id' => $host->id,

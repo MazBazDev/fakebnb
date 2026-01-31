@@ -3,7 +3,6 @@
 use App\Models\ApiToken;
 use App\Models\Listing;
 use App\Models\ListingImage;
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -21,8 +20,6 @@ function authHeaderForListingImages(User $user, string $plainToken): array
 function hostWithListingForImages(): array
 {
     $host = User::factory()->create();
-    $role = Role::firstOrCreate(['name' => 'host'], ['label' => 'Hôte']);
-    $host->roles()->attach($role);
 
     $listing = Listing::create([
         'host_user_id' => $host->id,

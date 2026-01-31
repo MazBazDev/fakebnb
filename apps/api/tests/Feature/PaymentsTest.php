@@ -3,7 +3,6 @@
 use App\Models\ApiToken;
 use App\Models\Booking;
 use App\Models\Listing;
-use App\Models\Role;
 use App\Models\User;
 
 function authHeaderForPayment(User $user, string $plainToken): array
@@ -19,8 +18,6 @@ function authHeaderForPayment(User $user, string $plainToken): array
 function bookingAwaitingPayment(): array
 {
     $host = User::factory()->create();
-    $role = Role::firstOrCreate(['name' => 'host'], ['label' => 'Hôte']);
-    $host->roles()->attach($role);
 
     $listing = Listing::create([
         'host_user_id' => $host->id,

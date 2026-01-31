@@ -3,7 +3,6 @@
 use App\Models\ApiToken;
 use App\Models\Cohost;
 use App\Models\Listing;
-use App\Models\Role;
 use App\Models\User;
 
 function authHeaderForUser(User $user, string $plainToken): array
@@ -18,11 +17,7 @@ function authHeaderForUser(User $user, string $plainToken): array
 
 function makeHost(): User
 {
-    $user = User::factory()->create();
-    $role = Role::firstOrCreate(['name' => 'host'], ['label' => 'Hôte']);
-    $user->roles()->attach($role);
-
-    return $user;
+    return User::factory()->create();
 }
 
 function makeListing(User $host): Listing

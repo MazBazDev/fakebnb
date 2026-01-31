@@ -3,7 +3,6 @@
 use App\Models\ApiToken;
 use App\Models\Cohost;
 use App\Models\Listing;
-use App\Models\Role;
 use App\Models\User;
 
 function authHeaderFor(User $user, string $plainToken): array
@@ -51,7 +50,7 @@ it('shows a listing detail', function () {
         ->assertJsonPath('data.id', $listing->id);
 });
 
-it('allows users to create a first listing and becomes host', function () {
+it('allows users to create a first listing', function () {
     $user = User::factory()->create();
     $headers = authHeaderFor($user, 'listing-non-host');
 
@@ -66,14 +65,10 @@ it('allows users to create a first listing and becomes host', function () {
 
     $response->assertCreated()
         ->assertJsonPath('data.host_user_id', $user->id);
-
-    expect($user->fresh()->roles()->where('name', 'host')->exists())->toBeTrue();
 });
 
 it('allows a host to create listings', function () {
     $user = User::factory()->create();
-    $role = Role::firstOrCreate(['name' => 'host'], ['label' => 'Hôte']);
-    $user->roles()->attach($role);
     $headers = authHeaderFor($user, 'listing-host');
 
     $response = $this->postJson('/api/v1/listings', [
@@ -93,8 +88,6 @@ it('allows a host to create listings', function () {
 
 it('allows host owner to update listing', function () {
     $user = User::factory()->create();
-    $role = Role::firstOrCreate(['name' => 'host'], ['label' => 'Hôte']);
-    $user->roles()->attach($role);
     $listing = Listing::create([
         'host_user_id' => $user->id,
         'title' => 'Maison',
@@ -116,8 +109,6 @@ it('allows host owner to update listing', function () {
 
 it('allows cohost with permission to update listing', function () {
     $host = User::factory()->create();
-    $hostRole = Role::firstOrCreate(['name' => 'host'], ['label' => 'Hôte']);
-    $host->roles()->attach($hostRole);
     $listing = Listing::create([
         'host_user_id' => $host->id,
         'title' => 'Studio',
@@ -146,8 +137,6 @@ it('allows cohost with permission to update listing', function () {
 
 it('prevents cohost without permission from updating listing', function () {
     $host = User::factory()->create();
-    $hostRole = Role::firstOrCreate(['name' => 'host'], ['label' => 'Hôte']);
-    $host->roles()->attach($hostRole);
     $listing = Listing::create([
         'host_user_id' => $host->id,
         'title' => 'Studio',
@@ -175,8 +164,6 @@ it('prevents cohost without permission from updating listing', function () {
 
 it('allows host owner to delete listing', function () {
     $user = User::factory()->create();
-    $role = Role::firstOrCreate(['name' => 'host'], ['label' => 'Hôte']);
-    $user->roles()->attach($role);
     $listing = Listing::create([
         'host_user_id' => $user->id,
         'title' => 'Maison',

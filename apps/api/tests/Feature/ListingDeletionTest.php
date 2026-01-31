@@ -7,7 +7,6 @@ use App\Models\Conversation;
 use App\Models\Listing;
 use App\Models\ListingImage;
 use App\Models\Message;
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -26,8 +25,6 @@ it('deletes listing with cascades and storage cleanup', function () {
     Storage::fake('public');
 
     $host = User::factory()->create();
-    $role = Role::firstOrCreate(['name' => 'host'], ['label' => 'Hôte']);
-    $host->roles()->attach($role);
 
     $listing = Listing::create([
         'host_user_id' => $host->id,
