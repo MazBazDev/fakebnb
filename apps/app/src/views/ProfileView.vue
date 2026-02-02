@@ -47,7 +47,7 @@ async function submit() {
       photo: photoFile.value,
     })
 
-    auth.setSession(auth.token, updated)
+    auth.setSession(auth.token, auth.refreshToken, auth.expiresAt, updated)
     success.value = 'Profil mis à jour.'
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Impossible de mettre à jour le profil.'

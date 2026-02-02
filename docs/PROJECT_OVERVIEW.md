@@ -214,13 +214,12 @@ apps/api/
 | **Message** | `messages` | `conversation_id`, `sender_user_id`, `body` | belongsTo: conversation, sender (User) |
 | **Cohost** | `cohosts` | `host_user_id`, `cohost_user_id`, `listing_id`, `can_read_conversations`, `can_reply_messages`, `can_edit_listings` | belongsTo: host, cohost (User), listing |
 | **ListingImage** | `listing_images` | `listing_id`, `path`, `position` | belongsTo: listing |
-| **ApiToken** | `api_tokens` | `user_id`, `token_hash`, `last_used_at` | belongsTo: user |
 
 ### Services (couche métier)
 
 | Service | Responsabilités |
 |---------|-----------------|
-| `AuthService` | Inscription, connexion, déconnexion, génération de tokens |
+| `AuthService` | Inscription, déconnexion (révocation tokens) |
 | `ListingService` | CRUD annonces, géocodage, filtrage par bounds/ville/capacité |
 | `BookingService` | Création, confirmation, rejet, annulation, détection de conflits |
 | `PaymentService` | Création d'intent, autorisation, capture, calcul TVA/frais |
@@ -242,7 +241,6 @@ apps/api/
 | `GET` | `/api/v1/health` | Health check |
 | `GET` | `/api/v1/ping` | Ping avec timestamp |
 | `POST` | `/api/v1/auth/register` | Inscription utilisateur |
-| `POST` | `/api/v1/auth/login` | Connexion utilisateur |
 | `GET` | `/api/v1/listings` | Liste des annonces (filtres: city, capacity, bounds) |
 | `GET` | `/api/v1/listings/{id}` | Détail d'une annonce |
 | `GET` | `/api/v1/listings/{id}/bookings` | Réservations confirmées d'une annonce |
@@ -387,7 +385,7 @@ apps/app/
 
 ```typescript
 // État
-token: string | null        // Token JWT
+token: string | null        // Access token OAuth2
 user: User | null           // Utilisateur connecté
 
 // Actions
@@ -439,17 +437,6 @@ bindToUser(userId)         // S'abonner aux événements temps réel
 | `address` | string (nullable) | Adresse |
 | `profile_photo_path` | string (nullable) | Photo de profil |
 | `email_verified_at` | timestamp (nullable) | Date vérification email |
-| `created_at` | timestamp | Date création |
-| `updated_at` | timestamp | Date modification |
-
-#### `api_tokens`
-
-| Colonne | Type | Description |
-|---------|------|-------------|
-| `id` | bigint | Clé primaire |
-| `user_id` | bigint (FK) | Utilisateur |
-| `token_hash` | string (unique) | Hash SHA256 du token |
-| `last_used_at` | timestamp (nullable) | Dernière utilisation |
 | `created_at` | timestamp | Date création |
 | `updated_at` | timestamp | Date modification |
 
@@ -569,39 +556,41 @@ bindToUser(userId)         // S'abonner aux événements temps réel
 
 ## Authentification
 
-### Système de tokens
+### Système OAuth2 (Passport + PKCE)
 
-Le projet utilise un système d'authentification **token-based** personnalisé (pas Laravel Sanctum).
+Le projet utilise **Laravel Passport** avec le flux **Authorization Code + PKCE** pour la SPA.
 
 #### Flux d'authentification
 
 ```
-1. Inscription/Connexion
-   POST /api/v1/auth/register ou /api/v1/auth/login
-   
-2. Réponse avec token
-   {
-     "user": { ... },
-     "token": "abc123..."
-   }
-   
-3. Stockage côté client
-   localStorage.setItem('token', 'abc123...')
-   
-4. Requêtes authentifiées
-   Authorization: Bearer abc123...
-   
-5. Validation serveur
-   - Middleware ApiTokenAuth
-   - Hash SHA256 du token
-   - Recherche dans api_tokens
-   - Injection de l'utilisateur
+1. Inscription (API)
+   POST /api/v1/auth/register
+
+2. Connexion (OAuth2 + PKCE)
+   SPA -> /oauth/authorize (code_challenge + state)
+
+3. Retour SPA
+   /auth/callback?code=...&state=...
+
+4. Échange du code
+   POST /oauth/token (code_verifier)
+
+5. Requêtes authentifiées
+   Authorization: Bearer <access_token>
+```
+
+#### Client OAuth (PKCE)
+
+Créer un client public Passport et renseigner l'ID côté SPA :
+
+```
+php artisan passport:client --public
 ```
 
 #### Middleware
 
-- **`ApiTokenAuth`** : Valide le token Bearer, retourne 401 si invalide
-- **`OptionalApiTokenAuth`** : Accepte requêtes authentifiées ET anonymes
+- **`auth:api`** : Guard Passport pour les routes protégées
+- **`auth.api.optional`** : Renseigne l'utilisateur si un token est présent
 
 ---
 
@@ -743,6 +732,10 @@ VITE_API_URL=http://localhost:8989/api/v1
 VITE_REVERB_APP_KEY=local
 VITE_REVERB_HOST=localhost
 VITE_REVERB_PORT=8080
+VITE_OAUTH_CLIENT_ID=your-public-client-id
+VITE_OAUTH_AUTHORIZE_URL=http://localhost:8989/oauth/authorize
+VITE_OAUTH_TOKEN_URL=http://localhost:8989/oauth/token
+VITE_OAUTH_REDIRECT_URI=http://localhost:5173/auth/callback
 ```
 
 ### Commandes Makefile

@@ -23,7 +23,7 @@ export async function updateProfile(payload: ProfilePayload) {
       body: formData,
       headers: {
         Accept: 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('auth.token') ?? ''}`,
+        Authorization: `Bearer ${localStorage.getItem('auth.access_token') ?? ''}`,
       },
     }
   )

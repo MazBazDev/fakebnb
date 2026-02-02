@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { apiFetch, ApiError } from '@/services/api'
+import { apiFetch, ApiError, setAuthTokenUpdater } from '@/services/api'
 
 export type User = {
   id: number
@@ -10,26 +10,53 @@ export type User = {
   profile_photo_url?: string | null
 }
 
-const TOKEN_KEY = 'auth.token'
+const ACCESS_TOKEN_KEY = 'auth.access_token'
+const REFRESH_TOKEN_KEY = 'auth.refresh_token'
+const EXPIRES_AT_KEY = 'auth.expires_at'
 const USER_KEY = 'auth.user'
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref<string | null>(localStorage.getItem(TOKEN_KEY))
+  const token = ref<string | null>(localStorage.getItem(ACCESS_TOKEN_KEY))
+  const refreshToken = ref<string | null>(localStorage.getItem(REFRESH_TOKEN_KEY))
+  const expiresAt = ref<string | null>(localStorage.getItem(EXPIRES_AT_KEY))
   const user = ref<User | null>(
     localStorage.getItem(USER_KEY) ? JSON.parse(localStorage.getItem(USER_KEY) as string) : null
   )
 
   const isAuthenticated = computed(() => Boolean(token.value))
 
-  function setSession(nextToken: string | null, nextUser: User | null) {
+  function setTokens(nextToken: string | null, nextRefreshToken: string | null, nextExpiresAt: string | null) {
     token.value = nextToken
-    user.value = nextUser
+    refreshToken.value = nextRefreshToken
+    expiresAt.value = nextExpiresAt
 
     if (nextToken) {
-      localStorage.setItem(TOKEN_KEY, nextToken)
+      localStorage.setItem(ACCESS_TOKEN_KEY, nextToken)
     } else {
-      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem(ACCESS_TOKEN_KEY)
     }
+
+    if (nextRefreshToken) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken)
+    } else {
+      localStorage.removeItem(REFRESH_TOKEN_KEY)
+    }
+
+    if (nextExpiresAt) {
+      localStorage.setItem(EXPIRES_AT_KEY, nextExpiresAt)
+    } else {
+      localStorage.removeItem(EXPIRES_AT_KEY)
+    }
+  }
+
+  function setSession(
+    nextToken: string | null,
+    nextRefreshToken: string | null,
+    nextExpiresAt: string | null,
+    nextUser: User | null
+  ) {
+    setTokens(nextToken, nextRefreshToken, nextExpiresAt)
+    user.value = nextUser
 
     if (nextUser) {
       localStorage.setItem(USER_KEY, JSON.stringify(nextUser))
@@ -38,22 +65,13 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function login(payload: { email: string; password: string }) {
-    const data = await apiFetch<{ token: string; user: User }>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-
-    setSession(data.token, data.user)
-  }
-
   async function register(payload: { name: string; email: string; password: string }) {
-    const data = await apiFetch<{ token: string; user: User }>('/auth/register', {
+    const data = await apiFetch<{ user: User }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(payload),
     })
 
-    setSession(data.token, data.user)
+    return data.user
   }
 
   async function logout() {
@@ -65,19 +83,24 @@ export const useAuthStore = defineStore('auth', () => {
       }
     }
 
-    setSession(null, null)
+    setSession(null, null, null, null)
   }
 
   async function fetchMe() {
     const data = await apiFetch<User>('/me')
-    setSession(token.value, data)
+    setSession(token.value, refreshToken.value, expiresAt.value, data)
   }
+
+  setAuthTokenUpdater((payload) => {
+    setTokens(payload.accessToken, payload.refreshToken, payload.expiresAt)
+  })
 
   return {
     token,
+    refreshToken,
+    expiresAt,
     user,
     isAuthenticated,
-    login,
     register,
     logout,
     fetchMe,

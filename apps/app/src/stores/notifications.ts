@@ -81,7 +81,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
   }
 
   function bindToUser(userId: number) {
-    const token = localStorage.getItem('auth.token')
+    const token = localStorage.getItem('auth.access_token')
     setEchoAuthToken(token)
     if (channelUserId.value === userId) return
     if (channelUserId.value) {

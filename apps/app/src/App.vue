@@ -42,7 +42,7 @@ onMounted(async () => {
     try {
       await auth.fetchMe()
     } catch {
-      auth.setSession(null, null)
+      auth.setSession(null, null, null, null)
     }
   }
 })

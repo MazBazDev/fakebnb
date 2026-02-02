@@ -1,19 +1,9 @@
 <?php
 
-use App\Models\ApiToken;
 use App\Models\Cohost;
 use App\Models\Listing;
 use App\Models\User;
-
-function authHeaderForUser(User $user, string $plainToken): array
-{
-    ApiToken::create([
-        'user_id' => $user->id,
-        'token_hash' => hash('sha256', $plainToken),
-    ]);
-
-    return ['Authorization' => "Bearer {$plainToken}"];
-}
+use Laravel\Passport\Passport;
 
 function makeHost(): User
 {
@@ -34,9 +24,9 @@ function makeListing(User $host): Listing
 
 it('forbids non-host users from listing cohosts', function () {
     $user = User::factory()->create();
-    $headers = authHeaderForUser($user, 'cohosts-non-host');
+    Passport::actingAs($user);
 
-    $response = $this->getJson('/api/v1/cohosts', $headers);
+    $response = $this->getJson('/api/v1/cohosts');
 
     $response->assertStatus(403);
 });
@@ -52,8 +42,8 @@ it('allows a host to list their cohosts', function () {
         'can_read_conversations' => true,
     ]);
 
-    $headers = authHeaderForUser($host, 'cohosts-host');
-    $response = $this->getJson('/api/v1/cohosts', $headers);
+    Passport::actingAs($host);
+    $response = $this->getJson('/api/v1/cohosts');
 
     $response->assertOk()
         ->assertJsonStructure([['id', 'host_user_id', 'cohost_user_id']]);
@@ -63,7 +53,7 @@ it('allows a host to create a cohost with permissions', function () {
     $host = makeHost();
     $listing = makeListing($host);
     $cohostUser = User::factory()->create();
-    $headers = authHeaderForUser($host, 'cohosts-create');
+    Passport::actingAs($host);
 
     $response = $this->postJson('/api/v1/cohosts', [
         'listing_id' => $listing->id,
@@ -71,7 +61,7 @@ it('allows a host to create a cohost with permissions', function () {
         'can_read_conversations' => true,
         'can_reply_messages' => true,
         'can_edit_listings' => false,
-    ], $headers);
+    ]);
 
     $response->assertCreated()
         ->assertJsonPath('cohost_user_id', $cohostUser->id);
@@ -89,13 +79,13 @@ it('allows a host to create a cohost with permissions', function () {
 it('prevents a host from adding themselves as cohost', function () {
     $host = makeHost();
     $listing = makeListing($host);
-    $headers = authHeaderForUser($host, 'cohosts-self');
+    Passport::actingAs($host);
 
     $response = $this->postJson('/api/v1/cohosts', [
         'listing_id' => $listing->id,
         'cohost_email' => $host->email,
         'can_read_conversations' => true,
-    ], $headers);
+    ]);
 
     $response->assertStatus(403);
 });
@@ -110,11 +100,11 @@ it('allows a host to update cohost permissions', function () {
         'listing_id' => $listing->id,
         'can_edit_listings' => false,
     ]);
-    $headers = authHeaderForUser($host, 'cohosts-update');
+    Passport::actingAs($host);
 
     $response = $this->patchJson("/api/v1/cohosts/{$cohost->id}", [
         'can_edit_listings' => true,
-    ], $headers);
+    ]);
 
     $response->assertOk()
         ->assertJsonPath('can_edit_listings', true);
@@ -131,11 +121,11 @@ it('forbids updating cohost owned by another host', function () {
         'listing_id' => $listing->id,
         'can_edit_listings' => false,
     ]);
-    $headers = authHeaderForUser($host, 'cohosts-update-deny');
+    Passport::actingAs($host);
 
     $response = $this->patchJson("/api/v1/cohosts/{$cohost->id}", [
         'can_edit_listings' => true,
-    ], $headers);
+    ]);
 
     $response->assertStatus(403);
 });
@@ -150,9 +140,9 @@ it('allows a host to delete a cohost', function () {
         'listing_id' => $listing->id,
         'can_edit_listings' => false,
     ]);
-    $headers = authHeaderForUser($host, 'cohosts-delete');
+    Passport::actingAs($host);
 
-    $response = $this->deleteJson("/api/v1/cohosts/{$cohost->id}", [], $headers);
+    $response = $this->deleteJson("/api/v1/cohosts/{$cohost->id}");
 
     $response->assertOk()
         ->assertJson(['message' => 'Co-hôte supprimé.']);

@@ -1,19 +1,9 @@
 <?php
 
-use App\Models\ApiToken;
 use App\Models\Cohost;
 use App\Models\Listing;
 use App\Models\User;
-
-function authHeaderFor(User $user, string $plainToken): array
-{
-    ApiToken::create([
-        'user_id' => $user->id,
-        'token_hash' => hash('sha256', $plainToken),
-    ]);
-
-    return ['Authorization' => "Bearer {$plainToken}"];
-}
+use Laravel\Passport\Passport;
 
 it('lists public listings', function () {
     $host = User::factory()->create();
@@ -52,7 +42,7 @@ it('shows a listing detail', function () {
 
 it('allows users to create a first listing', function () {
     $user = User::factory()->create();
-    $headers = authHeaderFor($user, 'listing-non-host');
+    Passport::actingAs($user);
 
     $response = $this->postJson('/api/v1/listings', [
         'title' => 'Studio',
@@ -61,7 +51,7 @@ it('allows users to create a first listing', function () {
         'address' => '3 rue de Rivoli',
         'guest_capacity' => 2,
         'price_per_night' => 90,
-    ], $headers);
+    ]);
 
     $response->assertCreated()
         ->assertJsonPath('data.host_user_id', $user->id);
@@ -69,7 +59,7 @@ it('allows users to create a first listing', function () {
 
 it('allows a host to create listings', function () {
     $user = User::factory()->create();
-    $headers = authHeaderFor($user, 'listing-host');
+    Passport::actingAs($user);
 
     $response = $this->postJson('/api/v1/listings', [
         'title' => 'Maison',
@@ -80,7 +70,7 @@ it('allows a host to create listings', function () {
         'price_per_night' => 110,
         'rules' => 'Non fumeur',
         'amenities' => ['wifi', 'parking'],
-    ], $headers);
+    ]);
 
     $response->assertCreated()
         ->assertJsonPath('data.host_user_id', $user->id);
@@ -97,11 +87,11 @@ it('allows host owner to update listing', function () {
         'price_per_night' => 110,
         'rules' => null,
     ]);
-    $headers = authHeaderFor($user, 'listing-host-update');
+    Passport::actingAs($user);
 
     $response = $this->patchJson("/api/v1/listings/{$listing->id}", [
         'price_per_night' => 130,
-    ], $headers);
+    ]);
 
     $response->assertOk()
         ->assertJsonPath('data.price_per_night', 130);
@@ -125,11 +115,11 @@ it('allows cohost with permission to update listing', function () {
         'listing_id' => $listing->id,
         'can_edit_listings' => true,
     ]);
-    $headers = authHeaderFor($cohost, 'listing-cohost-update');
+    Passport::actingAs($cohost);
 
     $response = $this->patchJson("/api/v1/listings/{$listing->id}", [
         'title' => 'Studio rénové',
-    ], $headers);
+    ]);
 
     $response->assertOk()
         ->assertJsonPath('data.title', 'Studio rénové');
@@ -153,11 +143,11 @@ it('prevents cohost without permission from updating listing', function () {
         'listing_id' => $listing->id,
         'can_edit_listings' => false,
     ]);
-    $headers = authHeaderFor($cohost, 'listing-cohost-deny');
+    Passport::actingAs($cohost);
 
     $response = $this->patchJson("/api/v1/listings/{$listing->id}", [
         'title' => 'Studio rénové',
-    ], $headers);
+    ]);
 
     $response->assertStatus(403);
 });
@@ -173,9 +163,9 @@ it('allows host owner to delete listing', function () {
         'price_per_night' => 110,
         'rules' => null,
     ]);
-    $headers = authHeaderFor($user, 'listing-host-delete');
+    Passport::actingAs($user);
 
-    $response = $this->deleteJson("/api/v1/listings/{$listing->id}", [], $headers);
+    $response = $this->deleteJson("/api/v1/listings/{$listing->id}");
 
     $response->assertOk()
         ->assertJson(['message' => 'Annonce supprimée.']);

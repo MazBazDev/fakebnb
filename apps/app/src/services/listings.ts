@@ -127,7 +127,7 @@ export async function uploadListingImages(listingId: number, files: File[]) {
       method: 'POST',
       body: formData,
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('auth.token') ?? ''}`,
+        Authorization: `Bearer ${localStorage.getItem('auth.access_token') ?? ''}`,
       },
     }
   )

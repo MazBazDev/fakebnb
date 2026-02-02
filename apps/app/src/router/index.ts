@@ -64,6 +64,11 @@ const router = createRouter({
       meta: { guestOnly: true },
     },
     {
+      path: '/auth/callback',
+      name: 'auth-callback',
+      component: () => import('@/views/AuthCallbackView.vue'),
+    },
+    {
       path: '/register',
       name: 'register',
       component: () => import('@/views/RegisterView.vue'),

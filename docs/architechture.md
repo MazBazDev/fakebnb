@@ -58,7 +58,7 @@ L’application doit permettre :
 
 * API REST conforme (ressources, méthodes, statuts, exposition maîtrisée des données). 
 * **Versioning obligatoire** (une version livrée, architecture prête pour plusieurs). 
-* **Sécurité** : JWT access token + droits côté serveur (refresh token en bonus). 
+* **Sécurité** : OAuth2 access token (Passport + PKCE) + droits côté serveur (refresh token en bonus). 
 * **Cache navigateur** sur lectures fréquentes, démontrable (headers + stratégie front). Cache serveur en bonus. 
 * Qualité : validation, gestion d’erreurs, tests, doc, schéma d’architecture. 
 
@@ -132,7 +132,7 @@ Cibler au minimum :
 
 ### 2) Sécurité
 
-* JWT access token obligatoire 
+* OAuth2 access token (Passport + PKCE) obligatoire 
 * Autorisation **côté serveur** via Policies/Gates (ne jamais faire confiance au front) 
 * Bonus : refresh token (si temps)
 
@@ -188,7 +188,7 @@ La doc d’API est obligatoire.
 
 ## Stratégie d’implémentation conseillée (ordre logique)
 
-1. **Auth JWT + users**
+1. **Auth OAuth2 + users (PKCE)**
 2. **Listings CRUD**
 3. **Bookings + anti-conflits**
 4. **Messaging**

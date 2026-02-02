@@ -25,8 +25,6 @@ Route::prefix('v1')->group(function () {
         ]);
     });
 
-    Route::post('/auth/register', [AuthController::class, 'register']);
-    Route::post('/auth/login', [AuthController::class, 'login']);
     Route::get('/listings', [ListingController::class, 'index'])
         ->middleware('auth.api.optional');
     Route::get('/listings/{listing}', [ListingController::class, 'show'])
@@ -34,7 +32,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/listings/{listing}/bookings', [ListingController::class, 'bookings'])
         ->middleware('auth.api.optional');
 
-    Route::middleware('auth.api')->group(function () {
+    Route::post('/auth/register', [AuthController::class, 'register']);
+
+    Route::middleware('auth:api')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::patch('/me/profile', [MeController::class, 'updateProfile']);

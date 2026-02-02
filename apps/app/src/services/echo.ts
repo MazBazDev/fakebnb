@@ -8,7 +8,7 @@ export function getEcho(): Echo<any> {
     return echoInstance
   }
 
-  const token = localStorage.getItem('auth.token')
+  const token = localStorage.getItem('auth.access_token')
 
   ;(window as unknown as { Pusher: typeof Pusher }).Pusher = Pusher
 

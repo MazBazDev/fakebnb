@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\ApiToken;
 use App\Models\Booking;
 use App\Models\Cohost;
 use App\Models\Conversation;
@@ -10,16 +9,7 @@ use App\Models\Message;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-
-function authHeaderForDeletion(User $user, string $plainToken): array
-{
-    ApiToken::create([
-        'user_id' => $user->id,
-        'token_hash' => hash('sha256', $plainToken),
-    ]);
-
-    return ['Authorization' => "Bearer {$plainToken}"];
-}
+use Laravel\Passport\Passport;
 
 it('deletes listing with cascades and storage cleanup', function () {
     Storage::fake('public');
@@ -72,8 +62,8 @@ it('deletes listing with cascades and storage cleanup', function () {
         'body' => 'Hello',
     ]);
 
-    $headers = authHeaderForDeletion($host, 'listing-delete');
-    $response = $this->deleteJson("/api/v1/listings/{$listing->id}", [], $headers);
+    Passport::actingAs($host);
+    $response = $this->deleteJson("/api/v1/listings/{$listing->id}");
 
     $response->assertOk();
 

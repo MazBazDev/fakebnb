@@ -1,19 +1,9 @@
 <?php
 
-use App\Models\ApiToken;
 use App\Models\Booking;
 use App\Models\Listing;
 use App\Models\User;
-
-function authHeaderForPayment(User $user, string $plainToken): array
-{
-    ApiToken::create([
-        'user_id' => $user->id,
-        'token_hash' => hash('sha256', $plainToken),
-    ]);
-
-    return ['Authorization' => "Bearer {$plainToken}"];
-}
+use Laravel\Passport\Passport;
 
 function bookingAwaitingPayment(): array
 {
@@ -42,11 +32,11 @@ function bookingAwaitingPayment(): array
 
 it('creates a payment intent for awaiting payment booking', function () {
     [$guest, $booking] = bookingAwaitingPayment();
-    $headers = authHeaderForPayment($guest, 'payment-intent');
+    Passport::actingAs($guest);
 
     $response = $this->postJson('/api/v1/payments/intent', [
         'booking_id' => $booking->id,
-    ], $headers);
+    ]);
 
     $response->assertCreated()
         ->assertJsonPath('data.booking_id', $booking->id)
@@ -55,13 +45,13 @@ it('creates a payment intent for awaiting payment booking', function () {
 
 it('authorizes and captures a payment', function () {
     [$guest, $booking] = bookingAwaitingPayment();
-    $headers = authHeaderForPayment($guest, 'payment-authorize');
+    Passport::actingAs($guest);
 
     $intent = $this->postJson('/api/v1/payments/intent', [
         'booking_id' => $booking->id,
-    ], $headers)->json('data');
+    ])->json('data');
 
-    $response = $this->postJson("/api/v1/payments/{$intent['id']}/authorize", [], $headers);
+    $response = $this->postJson("/api/v1/payments/{$intent['id']}/authorize");
 
     $response->assertOk()
         ->assertJsonPath('data.status', 'captured');
@@ -73,11 +63,11 @@ it('authorizes and captures a payment', function () {
 it('prevents intent for non awaiting payment bookings', function () {
     [$guest, $booking] = bookingAwaitingPayment();
     $booking->update(['status' => 'pending']);
-    $headers = authHeaderForPayment($guest, 'payment-intent-deny');
+    Passport::actingAs($guest);
 
     $response = $this->postJson('/api/v1/payments/intent', [
         'booking_id' => $booking->id,
-    ], $headers);
+    ]);
 
     $response->assertStatus(403);
 });

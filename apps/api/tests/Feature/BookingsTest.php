@@ -1,19 +1,9 @@
 <?php
 
-use App\Models\ApiToken;
 use App\Models\Booking;
 use App\Models\Listing;
 use App\Models\User;
-
-function authHeaderForBooking(User $user, string $plainToken): array
-{
-    ApiToken::create([
-        'user_id' => $user->id,
-        'token_hash' => hash('sha256', $plainToken),
-    ]);
-
-    return ['Authorization' => "Bearer {$plainToken}"];
-}
+use Laravel\Passport\Passport;
 
 function hostWithListing(): array
 {
@@ -34,13 +24,13 @@ function hostWithListing(): array
 it('creates a booking when dates are available', function () {
     [$host, $listing] = hostWithListing();
     $guest = User::factory()->create();
-    $headers = authHeaderForBooking($guest, 'booking-ok');
+    Passport::actingAs($guest);
 
     $response = $this->postJson('/api/v1/bookings', [
         'listing_id' => $listing->id,
         'start_date' => now()->addDays(5)->toDateString(),
         'end_date' => now()->addDays(8)->toDateString(),
-    ], $headers);
+    ]);
 
     $response->assertCreated()
         ->assertJsonPath('data.listing_id', $listing->id)
@@ -60,13 +50,13 @@ it('rejects overlapping bookings with 409', function () {
         'status' => 'confirmed',
     ]);
 
-    $headers = authHeaderForBooking(User::factory()->create(), 'booking-conflict');
+    Passport::actingAs(User::factory()->create());
 
     $response = $this->postJson('/api/v1/bookings', [
         'listing_id' => $listing->id,
         'start_date' => now()->addDays(11)->toDateString(),
         'end_date' => now()->addDays(13)->toDateString(),
-    ], $headers);
+    ]);
 
     $response->assertStatus(409)
         ->assertJson(['message' => 'Dates indisponibles.']);
@@ -82,11 +72,11 @@ it('returns bookings for guest or host', function () {
         'end_date' => now()->addDays(4)->toDateString(),
     ]);
 
-    $guestHeaders = authHeaderForBooking($guest, 'booking-guest');
-    $hostHeaders = authHeaderForBooking($host, 'booking-host');
+    Passport::actingAs($guest);
+    $guestResponse = $this->getJson('/api/v1/bookings');
 
-    $guestResponse = $this->getJson('/api/v1/bookings', $guestHeaders);
-    $hostResponse = $this->getJson('/api/v1/bookings', $hostHeaders);
+    Passport::actingAs($host);
+    $hostResponse = $this->getJson('/api/v1/bookings');
 
     $guestResponse->assertOk()
         ->assertJsonPath('data.0.id', $booking->id);
@@ -119,9 +109,9 @@ it('allows guest to cancel a booking and refunds when paid', function () {
         'status' => 'captured',
     ]);
 
-    $headers = authHeaderForBooking($guest, 'booking-cancel');
+    Passport::actingAs($guest);
 
-    $response = $this->postJson("/api/v1/bookings/{$booking->id}/cancel", [], $headers);
+    $response = $this->postJson("/api/v1/bookings/{$booking->id}/cancel");
 
     $response->assertOk()
         ->assertJsonPath('data.status', 'cancelled')
@@ -138,10 +128,9 @@ it('allows host to cancel a booking', function () {
         'end_date' => now()->addDays(6)->toDateString(),
         'status' => 'confirmed',
     ]);
+    Passport::actingAs($host);
 
-    $headers = authHeaderForBooking($host, 'booking-cancel-host');
-
-    $response = $this->postJson("/api/v1/bookings/{$booking->id}/cancel", [], $headers);
+    $response = $this->postJson("/api/v1/bookings/{$booking->id}/cancel");
 
     $response->assertOk()
         ->assertJsonPath('data.status', 'cancelled');
@@ -149,13 +138,13 @@ it('allows host to cancel a booking', function () {
 
 it('prevents host from booking their own listing', function () {
     [$host, $listing] = hostWithListing();
-    $headers = authHeaderForBooking($host, 'booking-host-own');
+    Passport::actingAs($host);
 
     $response = $this->postJson('/api/v1/bookings', [
         'listing_id' => $listing->id,
         'start_date' => now()->addDays(2)->toDateString(),
         'end_date' => now()->addDays(4)->toDateString(),
-    ], $headers);
+    ]);
 
     $response->assertStatus(403);
 });
@@ -172,14 +161,13 @@ it('prevents cohost from booking the listing', function () {
         'can_reply_messages' => true,
         'can_edit_listings' => false,
     ]);
-
-    $headers = authHeaderForBooking($cohost, 'booking-cohost-own');
+    Passport::actingAs($cohost);
 
     $response = $this->postJson('/api/v1/bookings', [
         'listing_id' => $listing->id,
         'start_date' => now()->addDays(2)->toDateString(),
         'end_date' => now()->addDays(4)->toDateString(),
-    ], $headers);
+    ]);
 
     $response->assertStatus(403);
 });
@@ -194,10 +182,9 @@ it('moves a booking to awaiting payment when host confirms', function () {
         'end_date' => now()->addDays(6)->toDateString(),
         'status' => 'pending',
     ]);
+    Passport::actingAs($host);
 
-    $headers = authHeaderForBooking($host, 'booking-confirm');
-
-    $response = $this->patchJson("/api/v1/bookings/{$booking->id}/confirm", [], $headers);
+    $response = $this->patchJson("/api/v1/bookings/{$booking->id}/confirm");
 
     $response->assertOk()
         ->assertJsonPath('data.status', 'awaiting_payment');
@@ -213,10 +200,9 @@ it('allows host to reject a booking', function () {
         'end_date' => now()->addDays(6)->toDateString(),
         'status' => 'pending',
     ]);
+    Passport::actingAs($host);
 
-    $headers = authHeaderForBooking($host, 'booking-reject');
-
-    $response = $this->patchJson("/api/v1/bookings/{$booking->id}/reject", [], $headers);
+    $response = $this->patchJson("/api/v1/bookings/{$booking->id}/reject");
 
     $response->assertOk()
         ->assertJsonPath('data.status', 'rejected');
@@ -232,10 +218,9 @@ it('prevents guests from confirming a booking', function () {
         'end_date' => now()->addDays(6)->toDateString(),
         'status' => 'pending',
     ]);
+    Passport::actingAs($guest);
 
-    $headers = authHeaderForBooking($guest, 'booking-confirm-guest');
-
-    $response = $this->patchJson("/api/v1/bookings/{$booking->id}/confirm", [], $headers);
+    $response = $this->patchJson("/api/v1/bookings/{$booking->id}/confirm");
 
     $response->assertStatus(403);
 });

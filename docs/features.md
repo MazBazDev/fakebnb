@@ -37,7 +37,7 @@ Backend
 
  Inscription utilisateur
 
- Connexion (JWT access token)
+ Connexion (OAuth2 access token + PKCE)
 
  Middleware auth API
 

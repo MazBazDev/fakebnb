@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import { useAuthStore } from '@/stores/auth'
+import { startOAuthFlow } from '@/services/oauth'
 
-const router = useRouter()
 const auth = useAuthStore()
 
 const name = ref('')
@@ -19,7 +18,7 @@ async function submit() {
 
   try {
     await auth.register({ name: name.value, email: email.value, password: password.value })
-    await router.replace('/listings')
+    await startOAuthFlow('/listings')
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Inscription impossible.'
   } finally {

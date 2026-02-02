@@ -1,21 +1,11 @@
 <?php
 
-use App\Models\ApiToken;
 use App\Models\Listing;
 use App\Models\ListingImage;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-
-function authHeaderForListingImages(User $user, string $plainToken): array
-{
-    ApiToken::create([
-        'user_id' => $user->id,
-        'token_hash' => hash('sha256', $plainToken),
-    ]);
-
-    return ['Authorization' => "Bearer {$plainToken}"];
-}
+use Laravel\Passport\Passport;
 
 function hostWithListingForImages(): array
 {
@@ -36,14 +26,14 @@ function hostWithListingForImages(): array
 it('allows host to upload multiple images', function () {
     Storage::fake('public');
     [$host, $listing] = hostWithListingForImages();
-    $headers = authHeaderForListingImages($host, 'listing-images');
+    Passport::actingAs($host);
 
     $response = $this->postJson("/api/v1/listings/{$listing->id}/images", [
         'images' => [
             UploadedFile::fake()->image('a.jpg'),
             UploadedFile::fake()->image('b.jpg'),
         ],
-    ], $headers);
+    ]);
 
     $response->assertCreated()
         ->assertJsonPath('data.id', $listing->id)
@@ -59,13 +49,13 @@ it('rejects image upload for non-host', function () {
     Storage::fake('public');
     [, $listing] = hostWithListingForImages();
     $user = User::factory()->create();
-    $headers = authHeaderForListingImages($user, 'listing-images-deny');
+    Passport::actingAs($user);
 
     $response = $this->postJson("/api/v1/listings/{$listing->id}/images", [
         'images' => [
             UploadedFile::fake()->image('a.jpg'),
         ],
-    ], $headers);
+    ]);
 
     $response->assertStatus(403);
 });
@@ -73,7 +63,7 @@ it('rejects image upload for non-host', function () {
 it('reorders images for a listing', function () {
     Storage::fake('public');
     [$host, $listing] = hostWithListingForImages();
-    $headers = authHeaderForListingImages($host, 'listing-images-reorder');
+    Passport::actingAs($host);
 
     $this->postJson("/api/v1/listings/{$listing->id}/images", [
         'images' => [
@@ -81,14 +71,14 @@ it('reorders images for a listing', function () {
             UploadedFile::fake()->image('b.jpg'),
             UploadedFile::fake()->image('c.jpg'),
         ],
-    ], $headers)->assertCreated();
+    ])->assertCreated();
 
     $imageIds = $listing->images()->pluck('id')->all();
     $reversed = array_reverse($imageIds);
 
     $response = $this->patchJson("/api/v1/listings/{$listing->id}/images/reorder", [
         'image_ids' => $reversed,
-    ], $headers);
+    ]);
 
     $response->assertOk()
         ->assertJsonPath('data.images.0.id', $reversed[0])
