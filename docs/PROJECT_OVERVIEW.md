@@ -805,6 +805,11 @@ php artisan migrate:fresh --seed
 # Cache
 php artisan cache:clear
 php artisan config:clear
+
+### Documentation API (Scramble)
+
+- UI docs : `/docs/api`
+- Spécification JSON : `/docs/api.json`
 ```
 
 ### SPA Vue

@@ -7,10 +7,15 @@ use App\Http\Requests\Profile\UpdateProfileRequest;
 use App\Services\ProfileService;
 use App\Services\ListingService;
 use App\Services\HostStatsService;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\Request;
 
+#[Group('Me', 'Endpoints liés à l’utilisateur courant')]
 class MeController extends Controller
 {
+    /**
+     * Mettre à jour le profil.
+     */
     public function updateProfile(UpdateProfileRequest $request, ProfileService $profileService)
     {
         $user = $profileService->update(
@@ -22,6 +27,9 @@ class MeController extends Controller
         return response()->json($user);
     }
 
+    /**
+     * Mes annonces (hôte).
+     */
     public function myListings(Request $request, ListingService $listingService)
     {
         $perPage = (int) $request->query('per_page', 12);
@@ -31,6 +39,9 @@ class MeController extends Controller
         );
     }
 
+    /**
+     * Annonces co-hébergées.
+     */
     public function cohostListings(Request $request, ListingService $listingService)
     {
         $perPage = (int) $request->query('per_page', 12);
@@ -40,6 +51,9 @@ class MeController extends Controller
         );
     }
 
+    /**
+     * Statistiques hôte.
+     */
     public function hostStats(Request $request, HostStatsService $hostStatsService)
     {
         return response()->json(

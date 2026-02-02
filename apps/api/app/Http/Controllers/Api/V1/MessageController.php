@@ -8,11 +8,16 @@ use App\Http\Resources\MessageResource;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Services\MessageService;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
+#[Group('Messages', 'Messages d’une conversation')]
 class MessageController extends Controller
 {
+    /**
+     * Messages d'une conversation.
+     */
     public function index(Request $request, Conversation $conversation, MessageService $messageService)
     {
         $messages = $messageService->listForConversation($request->user(), $conversation);
@@ -25,6 +30,9 @@ class MessageController extends Controller
         ]);
     }
 
+    /**
+     * Envoyer un message.
+     */
     public function store(
         StoreMessageRequest $request,
         Conversation $conversation,

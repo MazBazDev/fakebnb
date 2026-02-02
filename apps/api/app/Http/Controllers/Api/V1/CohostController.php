@@ -7,10 +7,15 @@ use App\Http\Requests\Cohost\StoreCohostRequest;
 use App\Http\Requests\Cohost\UpdateCohostRequest;
 use App\Models\Cohost;
 use App\Services\CohostService;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\Request;
 
+#[Group('Cohosts', 'Délégation de co-hôtes')]
 class CohostController extends Controller
 {
+    /**
+     * Liste des co-hôtes.
+     */
     public function index(Request $request, CohostService $cohostService)
     {
         $cohosts = $cohostService->listForHost(
@@ -21,6 +26,9 @@ class CohostController extends Controller
         return response()->json($cohosts);
     }
 
+    /**
+     * Ajouter un co-hôte.
+     */
     public function store(StoreCohostRequest $request, CohostService $cohostService)
     {
         $cohost = $cohostService->create($request->user(), $request->validated());
@@ -28,6 +36,9 @@ class CohostController extends Controller
         return response()->json($cohost, 201);
     }
 
+    /**
+     * Modifier les permissions d'un co-hôte.
+     */
     public function update(
         UpdateCohostRequest $request,
         Cohost $cohost,
@@ -38,6 +49,9 @@ class CohostController extends Controller
         return response()->json($updated);
     }
 
+    /**
+     * Supprimer un co-hôte.
+     */
     public function destroy(Request $request, Cohost $cohost, CohostService $cohostService)
     {
         $cohostService->delete($request->user(), $cohost);

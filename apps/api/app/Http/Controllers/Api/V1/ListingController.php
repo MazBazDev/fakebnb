@@ -10,12 +10,19 @@ use App\Http\Resources\ListingResource;
 use App\Models\Listing;
 use App\Services\BookingService;
 use App\Services\ListingService;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\Request;
 
+#[Group('Listings', 'Annonces publiques et gestion hôte')]
 class ListingController extends Controller
 {
     private const LISTINGS_CACHE_TTL = 60;
 
+    /**
+     * Liste publique des annonces.
+     *
+     * @unauthenticated
+     */
     public function index(Request $request, ListingService $listingService)
     {
         $filters = $request->only(['search', 'city', 'min_guests', 'bounds', 'padding_km']);
@@ -29,6 +36,11 @@ class ListingController extends Controller
         return $this->withCacheHeaders($request, $response, $payload, true);
     }
 
+    /**
+     * Détail d'une annonce.
+     *
+     * @unauthenticated
+     */
     public function show(Request $request, Listing $listing)
     {
         $resource = ListingResource::make($listing->load(['images', 'host']));
@@ -40,6 +52,11 @@ class ListingController extends Controller
         return $this->withCacheHeaders($request, $response, $payload, $isPublic);
     }
 
+    /**
+     * Réservations confirmées pour une annonce.
+     *
+     * @unauthenticated
+     */
     public function bookings(Listing $listing, BookingService $bookingService)
     {
         $bookings = $bookingService->listConfirmedForListing($listing);
@@ -47,6 +64,9 @@ class ListingController extends Controller
         return BookingResource::collection($bookings);
     }
 
+    /**
+     * Créer une annonce.
+     */
     public function store(StoreListingRequest $request, ListingService $listingService)
     {
         $listing = $listingService->create($request->user(), $request->validated());
@@ -54,6 +74,9 @@ class ListingController extends Controller
         return ListingResource::make($listing)->response()->setStatusCode(201);
     }
 
+    /**
+     * Mettre à jour une annonce.
+     */
     public function update(
         UpdateListingRequest $request,
         Listing $listing,
@@ -64,6 +87,9 @@ class ListingController extends Controller
         return ListingResource::make($updated);
     }
 
+    /**
+     * Supprimer une annonce.
+     */
     public function destroy(Request $request, Listing $listing, ListingService $listingService)
     {
         $listingService->delete($request->user(), $listing);

@@ -8,9 +8,14 @@ use App\Http\Requests\Listing\StoreListingImagesRequest;
 use App\Http\Resources\ListingResource;
 use App\Models\Listing;
 use App\Services\ListingImageService;
+use Dedoc\Scramble\Attributes\Group;
 
+#[Group('Listings', 'Images des annonces')]
 class ListingImageController extends Controller
 {
+    /**
+     * Upload des images d'une annonce.
+     */
     public function store(
         StoreListingImagesRequest $request,
         Listing $listing,
@@ -21,6 +26,9 @@ class ListingImageController extends Controller
         return ListingResource::make($listing->load('images'))->response()->setStatusCode(201);
     }
 
+    /**
+     * Réordonner les images d'une annonce.
+     */
     public function reorder(
         ReorderListingImagesRequest $request,
         Listing $listing,

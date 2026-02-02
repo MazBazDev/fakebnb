@@ -10,20 +10,14 @@ use App\Http\Controllers\Api\V1\ListingImageController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PaymentController;
+use App\Http\Controllers\Api\V1\StatusController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/v1/health', function () {
-    return response()->json(['status' => 'ok']);
-});
+Route::get('/v1/health', [StatusController::class, 'health']);
 
 Route::prefix('v1')->group(function () {
-    Route::get('/ping', function (Request $request) {
-        return response()->json([
-            'message' => 'ok',
-            'time' => now()->toIso8601String(),
-        ]);
-    });
+    Route::get('/ping', [StatusController::class, 'ping']);
 
     Route::get('/listings', [ListingController::class, 'index'])
         ->middleware('auth.api.optional');
