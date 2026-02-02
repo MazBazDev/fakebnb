@@ -16,23 +16,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory()->create([
-            'name' => 'TestClient',
-            'email' => 'tc@t.fr',
-            'password' => bcrypt('password'),
-        ]);
+        User::firstOrCreate(
+            ['email' => 'tc@t.fr'],
+            ['name' => 'TestClient', 'password' => bcrypt('password')]
+        );
 
-        User::factory()->create([
-            'name' => 'TestHost',
-            'email' => 'th@t.fr',
-            'password' => bcrypt('password'),
-        ]);
+        User::firstOrCreate(
+            ['email' => 'th@t.fr'],
+            ['name' => 'TestHost', 'password' => bcrypt('password')]
+        );
 
-        User::factory()->create([
-            'name' => 'TestCoHost',
-            'email' => 'tch@t.fr',
-            'password' => bcrypt('password'),
-        ]);
+        User::firstOrCreate(
+            ['email' => 'tch@t.fr'],
+            ['name' => 'TestCoHost', 'password' => bcrypt('password')]
+        );
 
         $this->call(ListingSeeder::class);
     }

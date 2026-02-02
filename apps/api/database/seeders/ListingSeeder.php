@@ -31,39 +31,70 @@ class ListingSeeder extends Seeder
             ['city' => 'La Rochelle', 'address' => '5 Quai Duperré', 'full_address' => '5 Quai Duperré, 17000 La Rochelle, France', 'lat' => 46.1603, 'lng' => -1.1511],
         ];
 
-        $faker = fake('fr_FR');
+        $titles = [
+            'Loft lumineux',
+            'Studio cosy',
+            'Maison de ville',
+            'Appartement design',
+            'Duplex familial',
+            'Terrasse panoramique',
+            'Cocon central',
+            'Suite moderne',
+        ];
+        $descriptions = [
+            'Un logement confortable, idéal pour un séjour détente.',
+            'Espace optimisé avec tout le nécessaire pour un court séjour.',
+            'Ambiance chaleureuse, proche des commerces et transports.',
+            'Décoration soignée, lumineux et calme.',
+            'Idéal pour familles ou groupes d’amis.',
+            'Vue dégagée, quartier vivant et accessible.',
+        ];
+        $rules = [
+            'Non fumeur',
+            'Animaux acceptés',
+            'Pas de fêtes',
+            'Arrivée autonome',
+        ];
+        $amenitiesPool = [
+            'wifi',
+            'kitchen',
+            'parking',
+            'washer',
+            'tv',
+            'air_conditioning',
+            'heating',
+            'workspace',
+            'pool',
+            'hot_tub',
+        ];
+        $capacities = [2, 3, 4, 5, 6, 7, 8];
+        $prices = [55, 70, 85, 95, 110, 130, 150, 180];
 
-        foreach ($listings as $data) {
+        foreach ($listings as $index => $data) {
             $host = User::where('name', 'TestHost')->first();
+            if (! $host) {
+                $host = User::firstOrCreate(
+                    ['email' => 'th@t.fr'],
+                    ['name' => 'TestHost', 'password' => bcrypt('password')]
+                );
+            }
             Listing::create([
                 'host_user_id' => $host->id,
-                'title' => $faker->sentence(4),
-                'description' => $faker->paragraphs(3, true),
+                'title' => $titles[$index % count($titles)],
+                'description' => $descriptions[$index % count($descriptions)],
                 'city' => $data['city'],
                 'address' => $data['address'],
                 'full_address' => $data['full_address'],
                 'latitude' => $data['lat'],
                 'longitude' => $data['lng'],
-                'guest_capacity' => $faker->numberBetween(2, 8),
-                'price_per_night' => $faker->numberBetween(45, 180),
-                'rules' => $faker->randomElement([
-                    'Non fumeur',
-                    'Animaux acceptés',
-                    'Pas de fêtes',
-                    'Arrivée autonome',
-                ]),
-                'amenities' => $faker->randomElements([
-                    'wifi',
-                    'kitchen',
-                    'parking',
-                    'washer',
-                    'tv',
-                    'air_conditioning',
-                    'heating',
-                    'workspace',
-                    'pool',
-                    'hot_tub',
-                ], $faker->numberBetween(3, 6)),
+                'guest_capacity' => $capacities[$index % count($capacities)],
+                'price_per_night' => $prices[$index % count($prices)],
+                'rules' => $rules[$index % count($rules)],
+                'amenities' => array_slice(
+                    $amenitiesPool,
+                    0,
+                    3 + ($index % 4)
+                ),
             ]);
         }
 

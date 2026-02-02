@@ -1,0 +1,14 @@
+{
+  debug
+  frankenphp
+}
+
+:80 {
+  root * /var/www/html/public
+  php_server
+  file_server
+  encode gzip zstd
+  log {
+    output stdout
+  }
+}
