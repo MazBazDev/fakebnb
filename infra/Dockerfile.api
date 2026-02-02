@@ -11,6 +11,7 @@ RUN install-php-extensions \
   exif \
   gd \
   intl \
+  pcntl \
   pdo_sqlite \
   sqlite3 \
   zip
