@@ -18,6 +18,7 @@ const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 const sidebarOpen = ref(false)
 let notificationInterval: number | null = null
+const isLoggingOut = ref(false)
 const apiOrigin = computed(() => {
   const apiBase = import.meta.env.VITE_API_URL ?? '/api/v1'
   if (apiBase.startsWith('http')) {
@@ -25,9 +26,6 @@ const apiOrigin = computed(() => {
   }
   return window.location.origin
 })
-const loginUrl = computed(() => `${apiOrigin.value}/login`)
-const registerUrl = computed(() => `${apiOrigin.value}/register`)
-
 const avatarUrl = computed(() => {
   if (!auth.user) return null
   if (auth.user.profile_photo_url) return auth.user.profile_photo_url
@@ -54,13 +52,29 @@ onMounted(async () => {
     try {
       await auth.fetchMe()
     } catch {
-      auth.setSession(null, null)
+      auth.setSession(null, null, null, null)
     }
   }
 })
 
 function toggleDropdown() {
   dropdownOpen.value = !dropdownOpen.value
+}
+
+async function redirectToOAuth(redirectTo = '/listings') {
+  await startOAuthFlow(redirectTo)
+}
+
+async function handleLogout() {
+  if (isLoggingOut.value) return
+  isLoggingOut.value = true
+
+  try {
+    await auth.logout()
+    window.location.href = `${apiOrigin.value}/logout?redirect=${encodeURIComponent(window.location.origin)}`
+  } finally {
+    isLoggingOut.value = false
+  }
 }
 
 function handleClickOutside(event: MouseEvent) {
@@ -163,9 +177,10 @@ watch(
           <button
             class="btn-outline w-full"
             type="button"
-            @click="auth.logout"
+            :disabled="isLoggingOut"
+            @click="handleLogout"
           >
-            Déconnexion
+            {{ isLoggingOut ? 'Déconnexion...' : 'Déconnexion' }}
           </button>
         </div>
       </aside>
@@ -211,20 +226,22 @@ watch(
               >
                 {{ showSidebar ? 'Voyageur' : 'Devenir hôte' }}
               </RouterLink>
-              <a
+              <button
                 v-if="!isAuthed"
-                :href="loginUrl"
                 class="nav-link-header"
+                type="button"
+                @click="redirectToOAuth()"
               >
                 Connexion
-              </a>
+              </button>
               <ClickSpark v-if="!isAuthed" :count="15" :colors="['#ffd700', '#ff6b6b', '#4ecdc4', '#FF385C']" :size="8">
-                <a
-                  :href="registerUrl"
+                <button
                   class="btn-primary"
+                  type="button"
+                  @click="redirectToOAuth()"
                 >
                   S'inscrire
-                </a>
+                </button>
               </ClickSpark>
               <div v-if="isAuthed" ref="dropdownRef" class="relative">
                 <button
@@ -276,9 +293,10 @@ watch(
                     <button
                       class="dropdown-item w-full text-left"
                       type="button"
-                      @click="auth.logout"
+                      :disabled="isLoggingOut"
+                      @click="handleLogout"
                     >
-                      Déconnexion
+                      {{ isLoggingOut ? 'Déconnexion...' : 'Déconnexion' }}
                     </button>
                   </div>
                 </div>

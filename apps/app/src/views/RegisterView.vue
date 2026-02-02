@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import Breadcrumbs from "@/components/Breadcrumbs.vue"
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
+import { useAuthStore } from '@/stores/auth'
 import { startOAuthFlow } from '@/services/oauth'
 
 const auth = useAuthStore()
