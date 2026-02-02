@@ -38,8 +38,16 @@ function handleClickOutside(event: MouseEvent) {
 function formatDate(value: string | null) {
   if (!value) return ''
   const date = new Date(value)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+  if (days === 0) return "Aujourd'hui"
+  if (days === 1) return 'Hier'
+  if (days < 7) return `Il y a ${days} jours`
+
   return date.toLocaleDateString('fr-FR', {
-    day: '2-digit',
+    day: 'numeric',
     month: 'short',
   })
 }
@@ -81,92 +89,121 @@ watch(
 <template>
   <div ref="rootRef" class="relative">
     <button
-      class="relative flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50"
+      class="relative flex h-10 w-10 items-center justify-center rounded-full text-gray-600 transition hover:bg-gray-100"
       type="button"
       aria-label="Notifications"
       @click="toggle"
     >
-      <span class="text-base">🔔</span>
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24">
+        <path
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1.5"
+          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+        />
+      </svg>
       <span
         v-if="hasUnread"
-        class="absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white"
+        class="absolute right-0 top-0 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#FF385C] px-1.5 text-[11px] font-semibold text-white shadow-sm"
       >
-        {{ notifications.unreadCount }}
+        {{ notifications.unreadCount > 9 ? '9+' : notifications.unreadCount }}
       </span>
     </button>
 
     <div
       v-if="open"
-      :class="['absolute z-40 mt-3 w-80 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl', dropdownClasses]"
+      :class="[
+        'absolute z-50 mt-3 w-96 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl',
+        dropdownClasses,
+      ]"
     >
-      <div class="mb-3 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <p class="text-xs font-semibold text-slate-700">Notifications</p>
-          <span v-if="livePulse" class="relative flex h-2 w-2">
-            <span
-              class="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75"
-            ></span>
-            <span class="relative inline-flex h-2 w-2 rounded-full bg-rose-500"></span>
-          </span>
+      <div class="border-b border-gray-100 px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <h3 class="text-lg font-semibold text-[#222222]">Notifications</h3>
+            <span v-if="livePulse" class="relative flex h-2 w-2">
+              <span
+                class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FF385C] opacity-75"
+              ></span>
+              <span class="relative inline-flex h-2 w-2 rounded-full bg-[#FF385C]"></span>
+            </span>
+          </div>
+          <button
+            v-if="hasUnread"
+            class="text-sm font-medium text-gray-600 underline transition hover:text-[#222222]"
+            type="button"
+            @click="handleMarkAll"
+          >
+            Tout lire
+          </button>
         </div>
-        <button
-          class="text-xs font-semibold text-slate-500 hover:text-slate-800"
-          type="button"
-          @click="handleMarkAll"
-        >
-          Tout marquer comme lu
-        </button>
       </div>
 
-      <div v-if="notifications.loading" class="text-xs text-slate-500">Chargement…</div>
-
-      <div v-else-if="notifications.items.length === 0" class="text-xs text-slate-500">
-        Pas de nouvelles notifications.
+      <div v-if="notifications.loading" class="px-6 py-8 text-center text-sm text-gray-500">
+        <div class="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#FF385C]"></div>
+        Chargement...
       </div>
 
-      <div v-else class="max-h-80 space-y-2 overflow-y-auto">
+      <div v-else-if="notifications.items.length === 0" class="px-6 py-12 text-center">
+        <svg class="mx-auto mb-3 h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24">
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+          />
+        </svg>
+        <p class="text-sm font-medium text-gray-900">Aucune notification</p>
+        <p class="mt-1 text-xs text-gray-500">Vous êtes à jour !</p>
+      </div>
+
+      <div v-else class="max-h-[28rem] overflow-y-auto">
         <div
           v-for="notification in notifications.items"
           :key="notification.id"
-          class="rounded-xl border border-slate-100 bg-slate-50/60 p-3"
+          :class="[
+            'border-b border-gray-100 px-6 py-4 transition hover:bg-gray-50',
+            !notification.is_read && 'bg-blue-50/30',
+          ]"
         >
-          <RouterLink
-            v-if="notification.action_url"
+          <component
+            :is="notification.action_url ? RouterLink : 'button'"
             :to="notification.action_url"
-            class="block"
-            @click="handleItemClick(notification.id, notification.is_read)"
-          >
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-xs font-semibold text-slate-700">
-                  {{ notification.title ?? 'Notification' }}
-                </p>
-                <p class="text-xs text-slate-500">
-                  {{ notification.body ?? '' }}
-                </p>
-              </div>
-              <span class="text-[11px] text-slate-400">{{ formatDate(notification.created_at) }}</span>
-            </div>
-          </RouterLink>
-          <button
-            v-else
+            :type="notification.action_url ? undefined : 'button'"
             class="block w-full text-left"
-            type="button"
             @click="handleItemClick(notification.id, notification.is_read)"
           >
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-xs font-semibold text-slate-700">
-                  {{ notification.title ?? 'Notification' }}
-                </p>
-                <p class="text-xs text-slate-500">
+            <div class="flex items-start gap-3">
+              <div class="flex-1 space-y-1">
+                <div class="flex items-start justify-between gap-2">
+                  <p class="text-sm font-semibold text-[#222222]">
+                    {{ notification.title ?? 'Notification' }}
+                  </p>
+                  <span
+                    v-if="!notification.is_read"
+                    class="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[#FF385C]"
+                  ></span>
+                </div>
+                <p class="text-sm leading-relaxed text-gray-600">
                   {{ notification.body ?? '' }}
                 </p>
+                <p class="text-xs text-gray-500">{{ formatDate(notification.created_at) }}</p>
               </div>
-              <span class="text-[11px] text-slate-400">{{ formatDate(notification.created_at) }}</span>
             </div>
-          </button>
+          </component>
         </div>
+      </div>
+
+      <div v-if="notifications.items.length > 0" class="border-t border-gray-100 px-6 py-3">
+        <RouterLink
+          to="/notifications"
+          class="block text-center text-sm font-medium text-gray-600 transition hover:text-[#222222]"
+          @click="open = false"
+        >
+          Voir toutes les notifications
+        </RouterLink>
       </div>
     </div>
   </div>

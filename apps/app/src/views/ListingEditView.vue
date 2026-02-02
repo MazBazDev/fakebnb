@@ -27,6 +27,7 @@ const form = ref({
 const images = ref<{ id: number; file: File; preview: string }[]>([])
 let nextImageId = 0
 const isDragActive = ref(false)
+const isReordering = ref(false)
 
 const amenityOptions = [
   { id: 'wifi', label: 'Wi-Fi' },
@@ -81,8 +82,8 @@ function handleDragLeave() {
   isDragActive.value = false
 }
 
-function moveExistingImage(id: number, direction: 'up' | 'down') {
-  if (!listing.value?.images) return
+async function moveExistingImage(id: number, direction: 'up' | 'down') {
+  if (!listing.value?.images || isReordering.value) return
   const imagesList = [...listing.value.images]
   const index = imagesList.findIndex((item) => item.id === id)
   if (index === -1) return
@@ -91,10 +92,25 @@ function moveExistingImage(id: number, direction: 'up' | 'down') {
   const [item] = imagesList.splice(index, 1)
   if (!item) return
   imagesList.splice(nextIndex, 0, item)
+
+  // Mettre à jour les positions localement
   listing.value.images = imagesList.map((image, idx) => ({
     ...image,
     position: idx + 1,
   }))
+
+  // Sauvegarder immédiatement dans l'API
+  isReordering.value = true
+  try {
+    const orderedIds = imagesList.map((img) => img.id)
+    await reorderListingImages(listing.value.id, orderedIds)
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Erreur lors de la réorganisation.'
+    // Recharger pour récupérer l'état correct
+    await load()
+  } finally {
+    isReordering.value = false
+  }
 }
 
 function removeNewImage(id: number) {
@@ -161,20 +177,9 @@ async function submit() {
       images.value = []
     }
 
+    // Recharger l'annonce pour obtenir les images mises à jour
     const refreshed = await fetchListing(listing.value.id)
-    const orderedExistingIds = (listing.value.images ?? [])
-      .sort((a, b) => a.position - b.position)
-      .map((image) => image.id)
-    const orderedAllIds = [
-      ...orderedExistingIds,
-      ...((refreshed.images ?? [])
-        .filter((image) => !orderedExistingIds.includes(image.id))
-        .map((image) => image.id)),
-    ]
-
-    if (orderedAllIds.length > 0) {
-      await reorderListingImages(listing.value.id, orderedAllIds)
-    }
+    listing.value = refreshed
 
     success.value = 'Annonce mise à jour.'
     await router.push('/host/listings')
@@ -335,7 +340,16 @@ onMounted(load)
       <div class="space-y-3">
         <label class="text-sm font-medium text-slate-700">Images existantes</label>
         <div v-if="orderedImages.length" class="space-y-3">
-          <p class="text-xs text-slate-500">Réorganise les images existantes.</p>
+          <p class="text-xs text-slate-500">
+            Réorganise les images existantes.
+            <span v-if="isReordering" class="ml-2 inline-flex items-center gap-1 text-emerald-600">
+              <svg class="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Sauvegarde...
+            </span>
+          </p>
           <div class="grid gap-3 md:grid-cols-2">
             <div
               v-for="image in orderedImages"
@@ -346,15 +360,17 @@ onMounted(load)
               <div class="flex-1 text-xs text-slate-500">Position {{ image.position }}</div>
               <div class="flex items-center gap-2">
                 <button
-                  class="rounded-full border border-slate-200 px-3 py-1 text-xs"
+                  class="rounded-full border border-slate-200 px-3 py-1 text-xs transition hover:border-slate-900 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   type="button"
+                  :disabled="isReordering"
                   @click="moveExistingImage(image.id, 'up')"
                 >
                   ↑
                 </button>
                 <button
-                  class="rounded-full border border-slate-200 px-3 py-1 text-xs"
+                  class="rounded-full border border-slate-200 px-3 py-1 text-xs transition hover:border-slate-900 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   type="button"
+                  :disabled="isReordering"
                   @click="moveExistingImage(image.id, 'down')"
                 >
                   ↓

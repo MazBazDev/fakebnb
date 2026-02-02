@@ -59,12 +59,12 @@ function statusLabel(status: Booking['status']) {
 }
 
 function statusClass(status: Booking['status']) {
-  if (status === 'confirmed') return 'bg-emerald-50 text-emerald-600 border-emerald-100'
-  if (status === 'awaiting_payment') return 'bg-amber-50 text-amber-600 border-amber-100'
-  if (status === 'completed') return 'bg-slate-100 text-slate-600 border-slate-200'
-  if (status === 'cancelled') return 'bg-slate-100 text-slate-600 border-slate-200'
-  if (status === 'rejected') return 'bg-rose-50 text-rose-600 border-rose-100'
-  return 'bg-amber-50 text-amber-600 border-amber-100'
+  if (status === 'confirmed') return 'bg-green-50 text-green-700 border-green-200'
+  if (status === 'awaiting_payment') return 'bg-amber-50 text-amber-700 border-amber-200'
+  if (status === 'completed') return 'bg-gray-100 text-gray-700 border-gray-200'
+  if (status === 'cancelled') return 'bg-gray-100 text-gray-700 border-gray-200'
+  if (status === 'rejected') return 'bg-red-50 text-red-700 border-red-200'
+  return 'bg-blue-50 text-blue-700 border-blue-200'
 }
 
 function isActiveOrFuture(booking: Booking) {
@@ -81,7 +81,7 @@ async function contactHost(booking: Booking) {
     const conversation = await createConversation(booking.listing_id)
     await router.push(`/messages/${conversation.id}`)
   } catch (err) {
-    contactError.value = err instanceof Error ? err.message : 'Impossible de contacter l’hôte.'
+    contactError.value = err instanceof Error ? err.message : 'Impossible de contacter l\'hôte.'
   }
 }
 
@@ -94,7 +94,7 @@ async function cancelBookingRequest(booking: Booking) {
     const updated = await cancelBooking(booking.id)
     bookings.value = bookings.value.map((item) => (item.id === updated.id ? updated : item))
   } catch (err) {
-    cancelError.value = err instanceof Error ? err.message : 'Impossible d’annuler la réservation.'
+    cancelError.value = err instanceof Error ? err.message : 'Impossible d\'annuler la réservation.'
   } finally {
     cancelBusy.value = cancelBusy.value.filter((id) => id !== booking.id)
   }
@@ -138,109 +138,222 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="space-y-8">
-    <header class="space-y-2">
-      <Breadcrumbs :items="[{ label: 'Accueil', to: '/' }, { label: 'Mes réservations' }]" />
-      <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Mes réservations</p>
-      <h1 class="text-3xl font-semibold text-slate-900">Mes réservations</h1>
-      <p class="text-sm text-slate-500">
-        Retrouve le détail de tes séjours et contacte ton hôte si besoin.
+  <section class="mx-auto max-w-5xl space-y-8">
+    <header class="space-y-4">
+      <Breadcrumbs :items="[{ label: 'Accueil', to: '/' }, { label: 'Voyages' }]" />
+      <h1 class="text-5xl font-semibold tracking-tight text-[#222222]">Vos voyages</h1>
+      <p class="text-lg text-gray-600">
+        Retrouvez vos réservations passées, en cours et à venir
       </p>
     </header>
 
-    <div class="space-y-3">
-      <h2 class="text-sm font-semibold text-slate-700">Toutes mes réservations</h2>
-      <div
-        v-if="isLoading"
-        class="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500"
-      >
-        Chargement des réservations...
+    <!-- Error Messages -->
+    <div v-if="error" class="rounded-xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700">
+      {{ error }}
+    </div>
+    <div v-if="contactError" class="rounded-xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700">
+      {{ contactError }}
+    </div>
+    <div v-if="cancelError" class="rounded-xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700">
+      {{ cancelError }}
+    </div>
+
+    <!-- Loading State -->
+    <div
+      v-if="isLoading"
+      class="flex items-center justify-center rounded-2xl border border-gray-100 bg-gray-50 py-20"
+    >
+      <div class="text-center">
+        <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#FF385C]"></div>
+        <p class="mt-4 text-sm text-gray-600">Chargement des réservations...</p>
       </div>
-      <div
-        v-else-if="travelerBookings.length === 0"
-        class="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500"
-      >
-        Aucune réservation enregistrée.
+    </div>
+
+    <!-- Empty State -->
+    <div
+      v-else-if="travelerBookings.length === 0"
+      class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 py-20"
+    >
+      <div class="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
+        <svg class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24">
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+          />
+        </svg>
       </div>
-      <div v-else class="grid gap-4 lg:grid-cols-2">
+      <h3 class="text-xl font-semibold text-[#222222]">Aucune réservation</h3>
+      <p class="mt-2 text-sm text-gray-600">Il est temps de planifier votre prochaine aventure !</p>
+      <RouterLink
+        to="/listings"
+        class="mt-6 rounded-lg bg-gradient-to-r from-[#E61E4D] to-[#D70466] px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:shadow-md"
+      >
+        Explorer les logements
+      </RouterLink>
+    </div>
+
+    <!-- Bookings Grid -->
+    <div v-else class="space-y-6">
+      <div class="grid gap-6">
         <article
           v-for="booking in travelerBookings"
           :key="booking.id"
-          class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
+          class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
         >
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Réservation</p>
-              <p class="text-lg font-semibold text-slate-900">
-                {{ listingLabel(booking.listing_id) }}
-              </p>
+          <div class="grid gap-6 md:grid-cols-[300px_1fr]">
+            <!-- Image -->
+            <div class="relative aspect-[4/3] overflow-hidden bg-gray-100 md:aspect-auto">
+              <img
+                v-if="listingFor(booking)?.images?.length"
+                :src="listingFor(booking)?.images?.[0]?.url"
+                class="h-full w-full object-cover"
+                :alt="listingLabel(booking.listing_id)"
+              />
+              <div v-else class="flex h-full w-full items-center justify-center">
+                <svg class="h-16 w-16 text-gray-300" fill="none" viewBox="0 0 24 24">
+                  <path
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
             </div>
-            <span class="text-xs uppercase tracking-[0.2em] text-slate-400">#{{ booking.id }}</span>
-          </div>
 
-          <div class="mt-3 flex flex-wrap items-center gap-2">
-            <span
-              class="rounded-full border px-3 py-1 text-xs font-semibold"
-              :class="statusClass(booking.status)"
-            >
-              {{ statusLabel(booking.status) }}
-            </span>
-            <span class="text-xs text-slate-500">
-              Du {{ booking.start_date }} au {{ booking.end_date }}
-            </span>
-          </div>
+            <!-- Content -->
+            <div class="flex flex-col justify-between p-6">
+              <div class="space-y-4">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-500">Réservation #{{ booking.id }}</p>
+                    <h2 class="mt-1 text-2xl font-semibold tracking-tight text-[#222222]">
+                      {{ listingLabel(booking.listing_id) }}
+                    </h2>
+                  </div>
+                  <span
+                    class="inline-flex rounded-full border px-3 py-1.5 text-xs font-semibold"
+                    :class="statusClass(booking.status)"
+                  >
+                    {{ statusLabel(booking.status) }}
+                  </span>
+                </div>
 
-          <div class="mt-4 flex flex-wrap items-center gap-3">
-            <RouterLink
-              :to="`/listings/${booking.listing_id}`"
-              class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
-            >
-              Voir le logement
-            </RouterLink>
-            <RouterLink
-              v-if="booking.status === 'awaiting_payment'"
-              :to="`/checkout/${booking.id}`"
-              class="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white"
-            >
-              Payer la réservation
-            </RouterLink>
-            <button
-              v-if="booking.status !== 'cancelled' && booking.status !== 'completed'"
-              class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 disabled:opacity-60"
-              type="button"
-              :disabled="cancelBusy.includes(booking.id)"
-              @click="cancelBookingRequest(booking)"
-            >
-              {{ cancelBusy.includes(booking.id) ? 'Annulation...' : 'Annuler' }}
-            </button>
-            <button
-              v-if="isActiveOrFuture(booking)"
-              class="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white"
-              type="button"
-              @click="contactHost(booking)"
-            >
-              Contacter l’hôte
-            </button>
-            <span v-else class="text-xs text-slate-400">
-              Contact disponible avant et pendant le séjour
-            </span>
-          </div>
+                <div class="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                  <div class="flex items-center gap-2">
+                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24">
+                      <path
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span>{{ booking.start_date }}</span>
+                  </div>
+                  <span class="text-gray-400">→</span>
+                  <div class="flex items-center gap-2">
+                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24">
+                      <path
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span>{{ booking.end_date }}</span>
+                  </div>
+                </div>
+              </div>
 
-          <div v-if="listingFor(booking)?.images?.length" class="mt-4 overflow-hidden rounded-2xl">
-            <img
-              :src="listingFor(booking)?.images?.[0]?.url"
-              class="h-40 w-full object-cover"
-              alt=""
-            />
+              <div class="mt-6 flex flex-wrap gap-3 border-t border-gray-100 pt-6">
+                <RouterLink
+                  :to="`/listings/${booking.listing_id}`"
+                  class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-[#222222] transition hover:border-black hover:bg-gray-50"
+                >
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <path
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                    <path
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                    />
+                  </svg>
+                  Voir le logement
+                </RouterLink>
+
+                <RouterLink
+                  v-if="booking.status === 'awaiting_payment'"
+                  :to="`/checkout/${booking.id}`"
+                  class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#E61E4D] to-[#D70466] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-md"
+                >
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <path
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                    />
+                  </svg>
+                  Payer
+                </RouterLink>
+
+                <button
+                  v-if="isActiveOrFuture(booking) && booking.status === 'confirmed'"
+                  class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-[#222222] transition hover:border-black hover:bg-gray-50"
+                  type="button"
+                  @click="contactHost(booking)"
+                >
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <path
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                  Contacter l'hôte
+                </button>
+
+                <button
+                  v-if="booking.status !== 'cancelled' && booking.status !== 'completed'"
+                  class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-600 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-40"
+                  type="button"
+                  :disabled="cancelBusy.includes(booking.id)"
+                  @click="cancelBookingRequest(booking)"
+                >
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <path
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                  {{ cancelBusy.includes(booking.id) ? 'Annulation...' : 'Annuler' }}
+                </button>
+              </div>
+            </div>
           </div>
         </article>
       </div>
-      <p v-if="contactError" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
-        {{ contactError }}
-      </p>
-      <p v-if="cancelError" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
-        {{ cancelError }}
-      </p>
     </div>
   </section>
 </template>

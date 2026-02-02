@@ -48,7 +48,7 @@ async function submit() {
     })
 
     auth.setSession(auth.token, auth.refreshToken, auth.expiresAt, updated)
-    success.value = 'Profil mis à jour.'
+    success.value = "Profil mis à jour."
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Impossible de mettre à jour le profil.'
   } finally {
@@ -58,68 +58,124 @@ async function submit() {
 </script>
 
 <template>
-  <section class="space-y-8">
-    <header class="space-y-2">
+  <section class="mx-auto max-w-4xl space-y-8">
+    <header class="space-y-3">
       <Breadcrumbs :items="[{ label: 'Accueil', to: '/' }, { label: 'Profil' }]" />
-      <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Profil</p>
-      <h1 class="text-3xl font-semibold text-slate-900">Mon profil</h1>
-      <p class="text-sm text-slate-500">
-        Mets à jour tes informations de contact et ta photo.
+      <h1 class="text-4xl font-semibold tracking-tight text-[#222222]">Informations personnelles</h1>
+      <p class="text-[15px] text-gray-600">
+        Mettez à jour vos informations et découvrez comment elles sont utilisées
       </p>
     </header>
 
-    <div class="grid gap-6 lg:grid-cols-[280px_1fr]">
-      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div class="flex flex-col items-center gap-4">
-          <div
-            class="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-2xl font-semibold text-slate-700"
-          >
-            <img v-if="photoPreview" :src="photoPreview" class="h-full w-full object-cover" />
-            <span v-else>{{ initials }}</span>
+    <div class="space-y-8">
+      <!-- Photo Section -->
+      <div class="rounded-2xl border border-gray-200 bg-white p-8">
+        <div class="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
+          <div class="flex items-center gap-6">
+            <div
+              class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-700 text-3xl font-semibold text-white shadow-sm"
+            >
+              <img v-if="photoPreview" :src="photoPreview" class="h-full w-full object-cover" />
+              <span v-else>{{ initials }}</span>
+            </div>
+            <div>
+              <h2 class="text-lg font-semibold text-[#222222]">Photo de profil</h2>
+              <p class="mt-1 text-sm text-gray-600">
+                Ajoutez une photo pour personnaliser votre compte
+              </p>
+            </div>
           </div>
-          <label class="cursor-pointer text-xs font-semibold text-slate-600">
-            Changer la photo
+          <label
+            class="cursor-pointer rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-[#222222] transition hover:border-black hover:bg-gray-50"
+          >
+            Modifier
             <input type="file" accept="image/*" class="hidden" @change="handlePhotoChange" />
           </label>
         </div>
       </div>
 
-      <form
-        class="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-        @submit.prevent="submit"
-      >
-        <div class="space-y-2">
-          <label class="text-sm font-medium text-slate-700">Nom</label>
-          <input
-            v-model="form.name"
-            type="text"
-            class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
-            required
-          />
-        </div>
-        <div class="space-y-2">
-          <label class="text-sm font-medium text-slate-700">Adresse</label>
-          <input
-            v-model="form.address"
-            type="text"
-            class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
-          />
-        </div>
-        <div v-if="error" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
-          {{ error }}
-        </div>
-        <div v-if="success" class="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-600">
-          {{ success }}
-        </div>
+      <!-- Form Section -->
+      <div class="rounded-2xl border border-gray-200 bg-white p-8">
+        <form class="space-y-8" @submit.prevent="submit">
+          <div class="space-y-6">
+            <div class="grid gap-6 md:grid-cols-2">
+              <div class="space-y-2">
+                <label class="text-sm font-semibold text-[#222222]">
+                  Nom complet
+                  <span class="text-red-500">*</span>
+                </label>
+                <input
+                  v-model="form.name"
+                  type="text"
+                  class="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-[#222222] transition placeholder:text-gray-400 focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+                  placeholder="Jean Dupont"
+                  required
+                />
+                <p class="text-xs text-gray-500">
+                  Votre nom apparaîtra sur votre profil et lors de vos réservations
+                </p>
+              </div>
 
-        <button
-          class="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          :disabled="isSubmitting"
-          type="submit"
-        >
-          {{ isSubmitting ? 'Mise à jour...' : 'Enregistrer' }}
-        </button>
-      </form>
+              <div class="space-y-2">
+                <label class="text-sm font-semibold text-[#222222]">Adresse e-mail</label>
+                <input
+                  type="email"
+                  :value="auth.user?.email"
+                  class="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 text-base text-gray-500"
+                  disabled
+                  readonly
+                />
+                <p class="text-xs text-gray-500">L'adresse e-mail ne peut pas être modifiée</p>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label class="text-sm font-semibold text-[#222222]">Adresse</label>
+              <input
+                v-model="form.address"
+                type="text"
+                class="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-[#222222] transition placeholder:text-gray-400 focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+                placeholder="123 Rue de la Paix, 75001 Paris"
+              />
+              <p class="text-xs text-gray-500">Votre adresse ne sera pas affichée publiquement</p>
+            </div>
+          </div>
+
+          <div v-if="error" class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            {{ error }}
+          </div>
+
+          <div v-if="success" class="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+            {{ success }}
+          </div>
+
+          <div class="flex items-center justify-between border-t border-gray-200 pt-6">
+            <button
+              type="button"
+              class="text-sm font-semibold text-gray-600 underline transition hover:text-[#222222]"
+              @click="
+                () => {
+                  form.name = auth.user?.name ?? ''
+                  form.address = auth.user?.address ?? ''
+                  photoPreview = auth.user?.profile_photo_url ?? null
+                  photoFile = null
+                  error = null
+                  success = null
+                }
+              "
+            >
+              Annuler
+            </button>
+            <button
+              class="rounded-lg bg-gradient-to-r from-[#E61E4D] to-[#D70466] px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="isSubmitting"
+              type="submit"
+            >
+              {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </section>
 </template>

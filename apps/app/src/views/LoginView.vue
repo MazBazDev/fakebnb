@@ -23,20 +23,20 @@ async function submit() {
 </script>
 
 <template>
-  <section class="mx-auto max-w-md space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-    <header class="space-y-1">
+  <section class="auth-container">
+    <header class="auth-header">
       <Breadcrumbs :items="[{ label: 'Accueil', to: '/' }, { label: 'Connexion' }]" />
-      <h1 class="text-2xl font-semibold text-slate-900">Connexion</h1>
-      <p class="text-sm text-slate-500">Vous allez être redirigé vers Fakebnb SSO.</p>
+      <h1 class="auth-title">Connexion</h1>
+      <p class="auth-subtitle">Vous allez être redirigé vers Fakebnb SSO.</p>
     </header>
 
-    <div class="space-y-4">
-      <p v-if="error" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
+    <div class="auth-card">
+      <p v-if="error" class="error-message">
         {{ error }}
       </p>
 
       <button
-        class="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        class="submit-btn"
         :disabled="isLoading"
         type="button"
         @click="submit"
@@ -46,3 +46,74 @@ async function submit() {
     </div>
   </section>
 </template>
+
+<style scoped>
+.auth-container {
+  max-width: 28rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.auth-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.auth-title {
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+}
+
+.auth-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.auth-card {
+  padding: 2rem;
+  border-radius: 1.5rem;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-elevated);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.error-message {
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
+  font-size: 0.875rem;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  border-radius: 0.75rem;
+  border: none;
+  background: linear-gradient(to right, #E61E4D, #D70466);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-fast), opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.submit-btn:hover:not(:disabled) {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+</style>

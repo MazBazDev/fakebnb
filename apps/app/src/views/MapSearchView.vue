@@ -5,6 +5,9 @@ import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { fetchListings, type Listing } from '@/services/listings'
+import { useTheme } from '@/composables/useTheme'
+
+const { isDark } = useTheme()
 
 const listings = ref<Listing[]>([])
 const isLoading = ref(false)
@@ -68,11 +71,12 @@ function refreshMarkers() {
 
   listings.value.forEach((listing) => {
     if (listing.latitude == null || listing.longitude == null) return
-    const marker = new maplibregl.Marker({ color: '#0f172a' })
+    const markerColor = isDark.value ? '#ff385c' : '#0f172a'
+    const marker = new maplibregl.Marker({ color: markerColor })
       .setLngLat([listing.longitude, listing.latitude])
       .setPopup(
         new maplibregl.Popup({ offset: 16 }).setHTML(
-          `<div style="font-size:12px;font-weight:600;">${listing.title}</div>`
+          `<div style="font-size:12px;font-weight:600;color:#222;">${listing.title}</div>`
         )
       )
       .addTo(mapInstance) as unknown as { remove: () => void }
@@ -140,125 +144,176 @@ onUnmounted(() => {
 watch([search, selectedCity, minGuests], () => {
   load()
 })
+
+// Rafraîchir les markers quand le thème change
+watch(isDark, () => {
+  refreshMarkers()
+})
 </script>
 
 <template>
-  <section class="space-y-6">
-    <header class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      <div>
+  <section class="map-search-view">
+    <!-- Header -->
+    <header class="page-header">
+      <div class="header-content">
         <Breadcrumbs :items="[{ label: 'Accueil', to: '/' }, { label: 'Carte' }]" />
-        <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Carte</p>
-        <h1 class="text-3xl font-semibold text-slate-900">Recherche sur la carte</h1>
-        <p class="text-sm text-slate-500">Bouge la carte pour filtrer les annonces.</p>
+        <p class="page-label">Carte</p>
+        <h1 class="page-title">Recherche sur la carte</h1>
+        <p class="page-subtitle">Déplacez la carte pour filtrer les annonces.</p>
       </div>
-      <RouterLink
-        to="/"
-        class="inline-flex rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
-      >
+      <RouterLink to="/" class="back-btn">
+        <svg class="back-icon" fill="none" viewBox="0 0 24 24">
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 10h16M4 14h16M4 18h16"
+          />
+        </svg>
         Voir en liste
       </RouterLink>
     </header>
 
-    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="grid gap-4 md:grid-cols-3">
-        <div class="space-y-2">
-          <label class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-            Recherche
-          </label>
+    <!-- Filters -->
+    <div class="filters-card">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label class="filter-label">Recherche</label>
           <input
             v-model="search"
             type="text"
-            class="w-full rounded-2xl border border-slate-200 px-4 py-2 text-sm"
+            class="filter-input"
             placeholder="Titre, adresse, description..."
           />
         </div>
-        <div class="space-y-2">
-          <label class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-            Ville
-          </label>
-          <select
-            v-model="selectedCity"
-            class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm"
-          >
-            <option value="">Toutes les villes</option>
-            <option v-for="city in cities" :key="city" :value="city">
-              {{ city }}
-            </option>
-          </select>
+        <div class="filter-group">
+          <label class="filter-label">Ville</label>
+          <div class="select-wrapper">
+            <div class="select-icon-left">
+              <svg class="icon" fill="none" viewBox="0 0 24 24">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            </div>
+            <select v-model="selectedCity" class="filter-select-with-icon">
+              <option value="">Toutes les villes</option>
+              <option v-for="city in cities" :key="city" :value="city">
+                {{ city }}
+              </option>
+            </select>
+            <div class="select-icon-right">
+              <svg class="icon" fill="none" viewBox="0 0 24 24">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
+          </div>
         </div>
-        <div class="space-y-2">
-          <label class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-            Capacité min.
-          </label>
+        <div class="filter-group">
+          <label class="filter-label">Capacité min.</label>
           <input
             v-model.number="minGuests"
             type="number"
             min="1"
-            class="w-full rounded-2xl border border-slate-200 px-4 py-2 text-sm"
+            class="filter-input"
             placeholder="Ex: 2"
           />
         </div>
       </div>
 
-      <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-        <span>{{ total }} annonce(s) trouvée(s)</span>
-        <button
-          class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
-          type="button"
-          @click="clearFilters"
-        >
+      <div class="filters-footer">
+        <span class="results-count">{{ total }} annonce(s) trouvée(s)</span>
+        <button class="reset-btn" type="button" @click="clearFilters">
           Réinitialiser
         </button>
       </div>
     </div>
 
-    <div v-if="error" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
+    <!-- Error -->
+    <div v-if="error" class="error-message">
       {{ error }}
     </div>
 
-    <div class="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-      <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div ref="mapContainer" class="h-[520px] w-full"></div>
+    <!-- Map + Listings Grid -->
+    <div class="content-grid">
+      <!-- Map Container -->
+      <div class="map-container">
+        <div ref="mapContainer" class="map"></div>
       </div>
 
-      <div class="space-y-3">
-        <div
-          v-if="isLoading"
-          class="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500"
-        >
-          Chargement des annonces...
+      <!-- Listings Panel -->
+      <div class="listings-panel">
+        <!-- Loading -->
+        <div v-if="isLoading" class="loading-card">
+          <div class="spinner"></div>
+          <span>Chargement des annonces...</span>
         </div>
-        <div
-          v-else-if="listings.length === 0"
-          class="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500"
-        >
-          Aucune annonce dans cette zone.
+
+        <!-- Empty -->
+        <div v-else-if="listings.length === 0" class="empty-card">
+          <svg class="empty-icon" fill="none" viewBox="0 0 24 24">
+            <path
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+            />
+            <path
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+          </svg>
+          <p>Aucune annonce dans cette zone.</p>
         </div>
-        <div v-else class="space-y-3">
-          <article
-            v-for="listing in listings"
-            :key="listing.id"
-            class="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600"
-          >
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-400">
-                  {{ listing.city }}
-                </p>
-                <h2 class="text-base font-semibold text-slate-900">{{ listing.title }}</h2>
+
+        <!-- Listings -->
+        <div v-else class="listings-list">
+          <article v-for="listing in listings" :key="listing.id" class="listing-card">
+            <div class="listing-header">
+              <div class="listing-info">
+                <p class="listing-city">{{ listing.city }}</p>
+                <h2 class="listing-title">{{ listing.title }}</h2>
               </div>
-              <span class="text-xs font-semibold text-slate-700">
-                {{ listing.price_per_night }} €/nuit
+              <span class="listing-price">
+                {{ listing.price_per_night }} €<span class="price-suffix">/nuit</span>
               </span>
             </div>
-            <p class="mt-2 text-xs text-slate-500">
+            <p class="listing-description">
               {{ listing.description.slice(0, 90) }}{{ listing.description.length > 90 ? '…' : '' }}
             </p>
-            <RouterLink
-              :to="`/listings/${listing.id}`"
-              class="mt-3 inline-flex text-xs font-semibold text-slate-900 hover:underline"
-            >
+            <RouterLink :to="`/listings/${listing.id}`" class="listing-link">
               Voir le détail
+              <svg class="link-arrow" fill="none" viewBox="0 0 24 24">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
             </RouterLink>
           </article>
         </div>
@@ -266,3 +321,404 @@ watch([search, selectedCity, minGuests], () => {
     </div>
   </section>
 </template>
+
+<style scoped>
+.map-search-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Header */
+.page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .page-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.page-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--color-text-tertiary);
+}
+
+.page-title {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.back-btn:hover {
+  border-color: var(--color-text-primary);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-hover);
+}
+
+.back-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Filters */
+.filters-card {
+  padding: 1.25rem;
+  border-radius: 1.5rem;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-elevated);
+  box-shadow: var(--shadow-sm);
+}
+
+.filters-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .filters-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--color-text-tertiary);
+}
+
+.filter-input {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  transition: border-color var(--transition-fast);
+}
+
+.filter-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: var(--color-brand-primary);
+}
+
+/* Select wrapper avec icônes */
+.select-wrapper {
+  position: relative;
+}
+
+.select-icon-left {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--color-text-tertiary);
+  transition: color var(--transition-fast);
+}
+
+.select-icon-right {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--color-text-tertiary);
+  transition: color var(--transition-fast);
+}
+
+.icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.filter-select-with-icon {
+  width: 100%;
+  padding: 0.5rem 2.5rem 0.5rem 3rem;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  appearance: none;
+  transition: border-color var(--transition-fast);
+}
+
+.filter-select-with-icon:hover {
+  border-color: var(--color-text-tertiary);
+}
+
+.filter-select-with-icon:focus {
+  outline: none;
+  border-color: var(--color-brand-primary);
+}
+
+.select-wrapper:hover .select-icon-left,
+.select-wrapper:hover .select-icon-right {
+  color: var(--color-text-secondary);
+}
+
+.select-wrapper:focus-within .select-icon-left,
+.select-wrapper:focus-within .select-icon-right {
+  color: var(--color-brand-primary);
+}
+
+.filters-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-secondary);
+}
+
+.results-count {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.reset-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.reset-btn:hover {
+  border-color: var(--color-text-primary);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-hover);
+}
+
+/* Error */
+.error-message {
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
+  font-size: 0.875rem;
+}
+
+/* Content Grid */
+.content-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1.2fr 1fr;
+  }
+}
+
+/* Map */
+.map-container {
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-elevated);
+  box-shadow: var(--shadow-sm);
+}
+
+.map {
+  width: 100%;
+  height: 520px;
+}
+
+/* Listings Panel */
+.listings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 520px;
+  overflow-y: auto;
+}
+
+.loading-card,
+.empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.empty-card {
+  border-style: dashed;
+}
+
+.spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 3px solid var(--color-border-primary);
+  border-top-color: var(--color-brand-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--color-text-tertiary);
+}
+
+/* Listings */
+.listings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.listing-card {
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-elevated);
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.listing-card:hover {
+  border-color: var(--color-border-secondary);
+  box-shadow: var(--shadow-md);
+}
+
+.listing-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.listing-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.listing-city {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--color-text-tertiary);
+}
+
+.listing-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.listing-price {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.price-suffix {
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.listing-description {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.listing-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  transition: color var(--transition-fast);
+}
+
+.listing-link:hover {
+  color: var(--color-brand-primary);
+}
+
+.link-arrow {
+  width: 0.875rem;
+  height: 0.875rem;
+  transition: transform var(--transition-fast);
+}
+
+.listing-link:hover .link-arrow {
+  transform: translateX(2px);
+}
+</style>

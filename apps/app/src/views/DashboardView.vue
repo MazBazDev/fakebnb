@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import { useAuthStore } from '@/stores/auth'
 import { fetchHostStats, type HostStats } from '@/services/hostStats'
@@ -60,140 +61,339 @@ onMounted(loadDashboard)
 </script>
 
 <template>
-  <section class="space-y-6">
-    <header class="space-y-2">
+  <section class="space-y-12">
+    <header class="space-y-4">
       <Breadcrumbs :items="[{ label: 'Hôte', to: '/host' }, { label: 'Tableau de bord' }]" />
-      <h1 class="text-3xl font-semibold text-slate-900">Bienvenue {{ displayName }}</h1>
-      <p class="text-sm text-slate-500">
-        Centralise tes annonces, réservations et messages dans un espace dédié.
-      </p>
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div class="space-y-2">
+          <h1 class="text-5xl font-semibold tracking-tight text-[#222222]">
+            Bienvenue, {{ displayName }}
+          </h1>
+          <p class="text-lg text-gray-600">Gérez vos annonces et réservations</p>
+        </div>
+        <RouterLink
+          to="/host/listings/new"
+          class="rounded-lg bg-gradient-to-r from-[#E61E4D] to-[#D70466] px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:shadow-md"
+        >
+          Créer une annonce
+        </RouterLink>
+      </div>
     </header>
 
+    <!-- Loading State -->
     <div
       v-if="isLoading"
-      class="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500"
+      class="flex items-center justify-center rounded-2xl border border-gray-100 bg-gray-50 py-20"
     >
-      Chargement des statistiques...
+      <div class="text-center">
+        <div
+          class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#FF385C]"
+        ></div>
+        <p class="mt-4 text-sm text-gray-600">Chargement des statistiques...</p>
+      </div>
     </div>
-    <div
-      v-else-if="error"
-      class="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-600"
-    >
+
+    <!-- Error State -->
+    <div v-else-if="error" class="rounded-xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700">
       {{ error }}
     </div>
 
-    <div v-else class="space-y-6">
-      <div class="grid gap-4 md:grid-cols-4">
-        <div class="rounded-2xl border border-slate-200 bg-white p-4">
-          <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Annonces</p>
-          <p class="mt-2 text-2xl font-semibold text-slate-900">
-            {{ stats?.listings_count ?? 0 }}
-          </p>
-          <p class="text-xs text-slate-500">Actives actuellement</p>
+    <!-- Dashboard Content -->
+    <div v-else class="space-y-8">
+      <!-- Stats Cards Grid -->
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <!-- Card 1: Annonces -->
+        <div class="group overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-slate-800">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1">
+              <p class="text-sm font-medium text-gray-500">Annonces actives</p>
+              <p class="text-4xl font-semibold tracking-tight text-[#222222]">
+                {{ stats?.listings_count ?? 0 }}
+              </p>
+            </div>
+            <div class="rounded-lg bg-blue-50 p-3">
+              <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                />
+              </svg>
+            </div>
+          </div>
+          <RouterLink
+            to="/host/listings"
+            class="mt-4 inline-flex items-center text-sm font-medium text-gray-600 transition hover:text-[#222222]"
+          >
+            Voir tout
+            <svg class="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24">
+              <path
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </RouterLink>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-4">
-          <p class="text-xs uppercase tracking-[0.2em] text-slate-400">En attente</p>
-          <p class="mt-2 text-2xl font-semibold text-slate-900">
-            {{ stats?.pending_count ?? 0 }}
-          </p>
-          <p class="text-xs text-slate-500">Demandes à traiter</p>
+
+        <!-- Card 2: En attente -->
+        <div class="group overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-slate-800">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1">
+              <p class="text-sm font-medium text-gray-500">En attente</p>
+              <p class="text-4xl font-semibold tracking-tight text-[#222222]">
+                {{ stats?.pending_count ?? 0 }}
+              </p>
+            </div>
+            <div class="rounded-lg bg-amber-50 p-3">
+              <svg class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+          </div>
+          <p class="mt-4 text-sm text-gray-600">Demandes à traiter</p>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-4">
-          <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Paiements</p>
-          <p class="mt-2 text-2xl font-semibold text-slate-900">
-            {{ stats?.awaiting_payment_count ?? 0 }}
-          </p>
-          <p class="text-xs text-slate-500">En attente de paiement</p>
+
+        <!-- Card 3: Paiements -->
+        <div class="group overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1">
+              <p class="text-sm font-medium text-gray-500">À payer</p>
+              <p class="text-4xl font-semibold tracking-tight text-[#222222]">
+                {{ stats?.awaiting_payment_count ?? 0 }}
+              </p>
+            </div>
+            <div class="rounded-lg bg-purple-50 p-3">
+              <svg class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                />
+              </svg>
+            </div>
+          </div>
+          <p class="mt-4 text-sm text-gray-600">En attente de paiement</p>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-4">
-          <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Revenus</p>
-          <p class="mt-2 text-2xl font-semibold text-slate-900">
-            {{ formatAmount(stats?.total_payout ?? 0) }}
-          </p>
-          <p class="text-xs text-slate-500">Payouts confirmés</p>
+
+        <!-- Card 4: Revenus -->
+        <div class="group overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1">
+              <p class="text-sm font-medium text-gray-500">Revenus totaux</p>
+              <p class="text-4xl font-semibold tracking-tight text-[#222222]">
+                {{ formatAmount(stats?.total_payout ?? 0) }}
+              </p>
+            </div>
+            <div class="rounded-lg bg-green-50 p-3">
+              <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+          </div>
+          <p class="mt-4 text-sm text-gray-600">Paiements confirmés</p>
         </div>
       </div>
 
-      <div class="grid gap-4 md:grid-cols-2">
-        <div class="rounded-2xl border border-slate-200 bg-white p-5">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Réservations</p>
-              <p class="mt-2 text-xl font-semibold text-slate-900">
-                {{ latestSeriesValue(bookingSeries) }}
-              </p>
-              <p class="text-xs text-slate-500">Ce mois-ci</p>
+      <!-- Charts Row -->
+      <div class="grid gap-6 lg:grid-cols-2">
+        <!-- Bookings Chart -->
+        <div class="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+          <div class="mb-6 flex items-start justify-between">
+            <div class="space-y-1">
+              <h2 class="text-lg font-semibold text-[#222222]">Réservations</h2>
+              <p class="text-sm text-gray-600">Évolution mensuelle</p>
             </div>
-            <svg width="140" height="40" viewBox="0 0 140 40" class="text-slate-300">
+            <div class="rounded-lg bg-blue-50 px-3 py-1">
+              <p class="text-2xl font-bold text-blue-600">{{ latestSeriesValue(bookingSeries) }}</p>
+              <p class="text-xs text-blue-600">Ce mois</p>
+            </div>
+          </div>
+          <div class="flex h-32 items-end justify-center">
+            <svg width="100%" height="128" viewBox="0 0 400 128" class="w-full">
+              <defs>
+                <linearGradient id="bookingGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" style="stop-color: rgb(59, 130, 246); stop-opacity: 0.5" />
+                  <stop offset="100%" style="stop-color: rgb(59, 130, 246); stop-opacity: 0" />
+                </linearGradient>
+              </defs>
               <polyline
-                :points="sparklinePoints(bookingSeries, 140, 40, 6)"
+                :points="sparklinePoints(bookingSeries, 400, 128, 8) + ' 400,128 0,128'"
+                fill="url(#bookingGradient)"
+              />
+              <polyline
+                :points="sparklinePoints(bookingSeries, 400, 128, 8)"
                 fill="none"
-                stroke="currentColor"
-                stroke-width="2"
+                stroke="rgb(59, 130, 246)"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
               />
             </svg>
           </div>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Revenu attendu</p>
-              <p class="mt-2 text-xl font-semibold text-slate-900">
+
+        <!-- Revenue Chart -->
+        <div class="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+          <div class="mb-6 flex items-start justify-between">
+            <div class="space-y-1">
+              <h2 class="text-lg font-semibold text-[#222222]">Revenus attendus</h2>
+              <p class="text-sm text-gray-600">Évolution mensuelle</p>
+            </div>
+            <div class="rounded-lg bg-green-50 px-3 py-1">
+              <p class="text-2xl font-bold text-green-600">
                 {{ formatAmount(latestSeriesValue(payoutSeries)) }}
               </p>
-              <p class="text-xs text-slate-500">Ce mois-ci</p>
+              <p class="text-xs text-green-600">Ce mois</p>
             </div>
-            <svg width="140" height="40" viewBox="0 0 140 40" class="text-emerald-300">
+          </div>
+          <div class="flex h-32 items-end justify-center">
+            <svg width="100%" height="128" viewBox="0 0 400 128" class="w-full">
+              <defs>
+                <linearGradient id="revenueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" style="stop-color: rgb(34, 197, 94); stop-opacity: 0.5" />
+                  <stop offset="100%" style="stop-color: rgb(34, 197, 94); stop-opacity: 0" />
+                </linearGradient>
+              </defs>
               <polyline
-                :points="sparklinePoints(payoutSeries, 140, 40, 6)"
+                :points="sparklinePoints(payoutSeries, 400, 128, 8) + ' 400,128 0,128'"
+                fill="url(#revenueGradient)"
+              />
+              <polyline
+                :points="sparklinePoints(payoutSeries, 400, 128, 8)"
                 fill="none"
-                stroke="currentColor"
-                stroke-width="2"
+                stroke="rgb(34, 197, 94)"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
               />
             </svg>
           </div>
         </div>
       </div>
 
-      <div class="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <div class="rounded-2xl border border-slate-200 bg-white p-5">
-          <h2 class="text-sm font-semibold text-slate-700">Dernières demandes</h2>
-          <p class="mt-1 text-sm text-slate-500">
-            Les réservations les plus récentes sur tes annonces.
-          </p>
-          <div v-if="recentBookings.length === 0" class="mt-4 text-sm text-slate-400">
-            Aucune réservation pour le moment.
+      <!-- Activity Section -->
+      <div class="grid gap-6 lg:grid-cols-5">
+        <!-- Recent Bookings -->
+        <div class="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm lg:col-span-3">
+          <div class="mb-6 flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-[#222222]">Dernières demandes</h2>
+              <p class="mt-1 text-sm text-gray-600">Les réservations les plus récentes</p>
+            </div>
+            <RouterLink
+              to="/host/bookings"
+              class="text-sm font-medium text-gray-600 underline transition hover:text-[#222222]"
+            >
+              Voir tout
+            </RouterLink>
           </div>
-          <div v-else class="mt-4 space-y-3">
+
+          <div v-if="recentBookings.length === 0" class="py-12 text-center">
+            <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+              <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              </svg>
+            </div>
+            <p class="text-sm font-medium text-gray-900">Aucune réservation</p>
+            <p class="mt-1 text-xs text-gray-500">Les nouvelles demandes apparaîtront ici</p>
+          </div>
+
+          <div v-else class="space-y-3">
             <div
               v-for="booking in recentBookings"
               :key="booking.id"
-              class="rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-sm text-slate-600"
+              class="group rounded-xl border border-gray-100 bg-gray-50 p-4 transition hover:border-gray-200 hover:bg-white hover:shadow-sm"
             >
-              <p class="font-semibold text-slate-800">{{ listingLabel(booking.listing_id) }}</p>
-              <p class="text-xs text-slate-500">
-                Du {{ booking.start_date }} au {{ booking.end_date }}
-              </p>
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 space-y-1">
+                  <p class="font-semibold text-[#222222]">{{ listingLabel(booking.listing_id) }}</p>
+                  <p class="text-sm text-gray-600">
+                    Du {{ booking.start_date }} au {{ booking.end_date }}
+                  </p>
+                </div>
+                <svg class="h-5 w-5 text-gray-400 transition group-hover:text-gray-600" fill="none" viewBox="0 0 24 24">
+                  <path
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-5">
-          <h2 class="text-sm font-semibold text-slate-700">Prochaines arrivées</h2>
-          <p class="mt-1 text-sm text-slate-500">Réservations confirmées à venir.</p>
-          <div v-if="upcomingArrivals.length === 0" class="mt-4 text-sm text-slate-400">
-            Aucune arrivée programmée.
+        <!-- Upcoming Arrivals -->
+        <div class="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm lg:col-span-2">
+          <div class="mb-6">
+            <h2 class="text-lg font-semibold text-[#222222]">Prochaines arrivées</h2>
+            <p class="mt-1 text-sm text-gray-600">Réservations confirmées</p>
           </div>
-          <div v-else class="mt-4 space-y-3">
+
+          <div v-if="upcomingArrivals.length === 0" class="py-12 text-center">
+            <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+              <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            <p class="text-sm font-medium text-gray-900">Aucune arrivée</p>
+            <p class="mt-1 text-xs text-gray-500">Programmée pour le moment</p>
+          </div>
+
+          <div v-else class="space-y-3">
             <div
               v-for="booking in upcomingArrivals"
               :key="booking.id"
-              class="rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-sm text-slate-600"
+              class="rounded-xl border border-gray-100 bg-gray-50 p-4 transition hover:border-gray-200 hover:bg-white hover:shadow-sm"
             >
-              <p class="font-semibold text-slate-800">{{ listingLabel(booking.listing_id) }}</p>
-              <p class="text-xs text-slate-500">
-                Arrivée le {{ booking.start_date }}
-              </p>
+              <div class="space-y-1">
+                <p class="font-semibold text-[#222222]">{{ listingLabel(booking.listing_id) }}</p>
+                <div class="flex items-center gap-2 text-sm text-gray-600">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <path
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                  {{ booking.start_date }}
+                </div>
+              </div>
             </div>
           </div>
         </div>

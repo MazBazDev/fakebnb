@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import Breadcrumbs from '@/components/Breadcrumbs.vue'
-import { useAuthStore } from '@/stores/auth'
+import Breadcrumbs from "@/components/Breadcrumbs.vue"
 import { startOAuthFlow } from '@/services/oauth'
 
 const auth = useAuthStore()
@@ -28,56 +27,221 @@ async function submit() {
 </script>
 
 <template>
-  <section class="mx-auto max-w-md space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-    <header class="space-y-1">
-      <Breadcrumbs :items="[{ label: 'Accueil', to: '/' }, { label: 'Inscription' }]" />
-      <h1 class="text-2xl font-semibold text-slate-900">Créer un compte</h1>
-      <p class="text-sm text-slate-500">Commencez par un profil client.</p>
+  <section class="auth-container">
+    <header class="auth-header">
+      <h1 class="auth-title">Bienvenue sur Fakebnb</h1>
+      <p class="auth-subtitle">Créez votre compte pour commencer</p>
     </header>
 
-    <form class="space-y-4" @submit.prevent="submit">
-      <div class="space-y-2">
-        <label class="text-sm font-medium text-slate-700">Nom</label>
-        <input
-          v-model="name"
-          type="text"
-          autocomplete="name"
-          class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
-          required
-        />
-      </div>
-      <div class="space-y-2">
-        <label class="text-sm font-medium text-slate-700">Email</label>
-        <input
-          v-model="email"
-          type="email"
-          autocomplete="email"
-          class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
-          required
-        />
-      </div>
-      <div class="space-y-2">
-        <label class="text-sm font-medium text-slate-700">Mot de passe</label>
-        <input
-          v-model="password"
-          type="password"
-          autocomplete="new-password"
-          class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
-          required
-        />
-      </div>
+    <div class="auth-card">
+      <form class="auth-form" @submit.prevent="submit">
+        <div class="form-group">
+          <label class="form-label">Nom complet</label>
+          <input
+            v-model="name"
+            type="text"
+            autocomplete="name"
+            class="form-input"
+            placeholder="Jean Dupont"
+            required
+          />
+        </div>
 
-      <p v-if="error" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
-        {{ error }}
-      </p>
+        <div class="form-group">
+          <label class="form-label">Adresse e-mail</label>
+          <input
+            v-model="email"
+            type="email"
+            autocomplete="email"
+            class="form-input"
+            placeholder="nom@exemple.com"
+            required
+          />
+        </div>
 
-      <button
-        class="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-        :disabled="isLoading"
-        type="submit"
-      >
-        {{ isLoading ? 'Création...' : 'Créer le compte' }}
-      </button>
-    </form>
+        <div class="form-group">
+          <label class="form-label">Mot de passe</label>
+          <input
+            v-model="password"
+            type="password"
+            autocomplete="new-password"
+            class="form-input"
+            placeholder="••••••••"
+            required
+          />
+          <p class="form-hint">Minimum 8 caractères recommandés</p>
+        </div>
+
+        <p v-if="error" class="error-message">
+          {{ error }}
+        </p>
+
+        <button
+          class="submit-btn"
+          :disabled="isLoading"
+          type="submit"
+        >
+          {{ isLoading ? 'Création...' : 'Accepter et continuer' }}
+        </button>
+
+        <p class="legal-text">
+          En sélectionnant <strong>Accepter et continuer</strong>, j'accepte les Conditions d'utilisation de Fakebnb et je reconnais avoir pris connaissance de la Politique de confidentialité.
+        </p>
+      </form>
+
+      <div class="auth-footer">
+        <p class="footer-text">
+          Vous avez déjà un compte ?
+          <RouterLink to="/login" class="footer-link">
+            Connectez-vous
+          </RouterLink>
+        </p>
+      </div>
+    </div>
   </section>
 </template>
+
+<style scoped>
+.auth-container {
+  max-width: 28rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.auth-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-title {
+  font-size: 2.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+}
+
+.auth-subtitle {
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+}
+
+.auth-card {
+  padding: 2rem;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-elevated);
+  box-shadow: var(--shadow-sm);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: 1rem;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-text-primary);
+  box-shadow: 0 0 0 2px var(--color-text-primary);
+}
+
+.form-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+}
+
+.error-message {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
+  font-size: 0.875rem;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: linear-gradient(to right, #E61E4D, #D70466);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-fast), opacity var(--transition-fast);
+}
+
+.submit-btn:hover:not(:disabled) {
+  box-shadow: var(--shadow-md);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.legal-text {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--color-text-tertiary);
+}
+
+.legal-text strong {
+  font-weight: 600;
+}
+
+.auth-footer {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border-primary);
+  text-align: center;
+}
+
+.footer-text {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.footer-link {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-decoration: underline;
+  transition: color var(--transition-fast);
+}
+
+.footer-link:hover {
+  color: var(--color-text-secondary);
+}
+</style>

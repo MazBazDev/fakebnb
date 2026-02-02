@@ -5,6 +5,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useNotificationsStore } from '@/stores/notifications'
 import { gravatarUrl } from '@/utils/gravatar'
 import NotificationBell from '@/components/NotificationBell.vue'
+import ThemeToggle from '@/components/ThemeToggle.vue'
+import ClickSpark from '@/components/ClickSpark.vue'
 import { startOAuthFlow } from '@/services/oauth'
 
 const auth = useAuthStore()
@@ -16,14 +18,6 @@ const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 const sidebarOpen = ref(false)
 let notificationInterval: number | null = null
-const isLoggingOut = ref(false)
-const apiOrigin = computed(() => {
-  const apiBase = import.meta.env.VITE_API_URL ?? '/api/v1'
-  if (apiBase.startsWith('http')) {
-    return new URL(apiBase).origin
-  }
-  return window.location.origin
-})
 
 const avatarUrl = computed(() => {
   if (!auth.user) return null
@@ -51,29 +45,13 @@ onMounted(async () => {
     try {
       await auth.fetchMe()
     } catch {
-      auth.setSession(null, null, null, null)
+      auth.setSession(null, null)
     }
   }
 })
 
 function toggleDropdown() {
   dropdownOpen.value = !dropdownOpen.value
-}
-
-async function redirectToOAuth(redirectTo = '/listings') {
-  await startOAuthFlow(redirectTo)
-}
-
-async function handleLogout() {
-  if (isLoggingOut.value) return
-  isLoggingOut.value = true
-
-  try {
-    await auth.logout()
-    window.location.href = `${apiOrigin.value}/logout?redirect=${encodeURIComponent(window.location.origin)}`
-  } finally {
-    isLoggingOut.value = false
-  }
 }
 
 function handleClickOutside(event: MouseEvent) {
@@ -120,180 +98,259 @@ watch(
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 text-slate-900">
+  <div class="app-container">
     <div class="flex min-h-screen">
+      <!-- Sidebar Host Mode -->
       <aside
         v-if="showSidebar"
-        class="hidden w-64 flex-col border-r border-slate-200 bg-white px-4 py-6 md:flex"
+        class="sidebar hidden md:flex"
       >
-        <RouterLink to="/" class="text-sm font-semibold tracking-wide text-slate-900">
-          MiniBnB
-        </RouterLink>
+        <ClickSpark :count="12" :colors="['#FF385C', '#E61E4D', '#ffd700', '#ff6b6b']" :size="6">
+          <RouterLink to="/" class="text-xl font-semibold tracking-tight text-[#FF385C]">
+            Fakebnb
+          </RouterLink>
+        </ClickSpark>
 
-        <nav class="mt-8 flex flex-1 flex-col gap-2 text-sm text-slate-600">
-          <RouterLink to="/host" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+        <nav class="mt-12 flex flex-1 flex-col gap-1">
+          <RouterLink
+            to="/host"
+            class="nav-link"
+          >
             Tableau de bord
           </RouterLink>
-          <RouterLink to="/host/listings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Mes annonces
+          <RouterLink
+            to="/host/listings"
+            class="nav-link"
+          >
+            Annonces
           </RouterLink>
-          <RouterLink to="/host/bookings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Réservations reçues
+          <RouterLink
+            to="/host/bookings"
+            class="nav-link"
+          >
+            Réservations
           </RouterLink>
-          <RouterLink to="/host/cohosts" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+          <RouterLink
+            to="/host/cohosts"
+            class="nav-link"
+          >
             Co-hôtes
           </RouterLink>
         </nav>
 
-        <div class="mt-6 border-t border-slate-200 pt-4">
+        <div class="sidebar-footer">
           <div class="flex items-center gap-3">
             <span
-              class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-xs font-semibold text-slate-700"
+              class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-700 text-xs font-semibold text-white"
             >
               <img v-if="avatarUrl" :src="avatarUrl" class="h-full w-full object-cover" />
               <span v-else>{{ initials }}</span>
             </span>
-            <div class="text-xs">
-              <p class="font-semibold text-slate-800">{{ auth.user?.name }}</p>
-              <p class="text-slate-400">{{ auth.user?.email }}</p>
+            <div class="min-w-0 flex-1 text-sm">
+              <p class="truncate font-semibold text-primary">{{ auth.user?.name }}</p>
+              <p class="truncate text-xs text-secondary">{{ auth.user?.email }}</p>
             </div>
           </div>
           <button
-            class="mt-4 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700"
+            class="btn-outline w-full"
             type="button"
-            :disabled="isLoggingOut"
-            @click="handleLogout"
+            @click="auth.logout"
           >
-            {{ isLoggingOut ? 'Déconnexion...' : 'Déconnexion' }}
+            Déconnexion
           </button>
         </div>
       </aside>
 
       <div class="flex flex-1 flex-col">
-        <header class="border-b border-slate-200 bg-white/80 backdrop-blur">
-          <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-            <div class="flex items-center gap-3">
+        <!-- Header -->
+        <header class="header">
+          <div class="mx-auto flex max-w-[2520px] items-center justify-between px-6 py-4 lg:px-20">
+            <div class="flex items-center gap-8">
+              <ClickSpark v-if="!showSidebar" :count="12" :colors="['#FF385C', '#E61E4D', '#ffd700', '#ff6b6b']" :size="6">
+                <RouterLink
+                  to="/"
+                  class="text-2xl font-semibold tracking-tight text-[#FF385C]"
+                >
+                  Fakebnb
+                </RouterLink>
+              </ClickSpark>
               <button
                 v-if="showSidebar"
-                class="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold md:hidden"
+                class="mobile-menu-btn md:hidden"
                 type="button"
                 @click="sidebarOpen = true"
               >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
                 Menu
               </button>
             </div>
 
-            <nav class="flex items-center gap-4 text-sm">
+            <nav class="flex items-center gap-4">
+              <ThemeToggle />
               <NotificationBell v-if="isAuthed" />
               <RouterLink
                 v-if="isAuthed"
                 :to="showSidebar ? '/listings' : '/host'"
-                class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
+                class="nav-link-header hidden sm:block"
               >
-                {{ showSidebar ? 'Mode voyageur' : 'Mode hôte' }}
+                {{ showSidebar ? 'Voyageur' : 'Devenir hôte' }}
               </RouterLink>
-              <button
+              <RouterLink
                 v-if="!isAuthed"
-                class="text-slate-600 hover:text-slate-900"
-                type="button"
-                @click="redirectToOAuth()"
+                to="/login"
+                class="nav-link-header"
               >
                 Connexion
-              </button>
-              <button
-                v-if="!isAuthed"
-                class="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white"
-                type="button"
-                @click="redirectToOAuth()"
-              >
-                S’inscrire
-              </button>
+              </RouterLink>
+              <ClickSpark v-if="!isAuthed" :count="15" :colors="['#ffd700', '#ff6b6b', '#4ecdc4', '#FF385C']" :size="8">
+                <RouterLink
+                  to="/register"
+                  class="btn-primary"
+                >
+                  S'inscrire
+                </RouterLink>
+              </ClickSpark>
               <div v-if="isAuthed" ref="dropdownRef" class="relative">
                 <button
-                  class="flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700"
+                  class="user-menu-btn"
                   type="button"
                   @click="toggleDropdown"
                 >
+                  <svg class="h-4 w-4 text-secondary" fill="none" viewBox="0 0 24 24">
+                    <path
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-width="2"
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
                   <span
-                    class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-xs font-semibold text-slate-700"
+                    class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-700 text-xs font-semibold text-white"
                   >
                     <img v-if="avatarUrl" :src="avatarUrl" class="h-full w-full object-cover" />
                     <span v-else>{{ initials }}</span>
                   </span>
-                  <span class="hidden sm:inline">{{ auth.user?.name }}</span>
                 </button>
 
                 <div
                   v-if="dropdownOpen"
-                  class="absolute right-0 mt-2 w-48 rounded-2xl border border-slate-200 bg-white p-2 text-xs shadow-lg"
+                  class="dropdown-menu"
                 >
-                  <RouterLink
-                    to="/profile"
-                    class="block rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                  >
-                    Profil
-                  </RouterLink>
-                  <RouterLink
-                    to="/messages"
-                    class="block rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                  >
-                    Mes messages
-                  </RouterLink>
-                  <RouterLink
-                    to="/bookings"
-                    class="block rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                  >
-                    Historique
-                  </RouterLink>
-                  <button
-                    class="mt-1 w-full rounded-xl px-3 py-2 text-left text-rose-600 hover:bg-rose-50"
-                    type="button"
-                    :disabled="isLoggingOut"
-                    @click="handleLogout"
-                  >
-                    {{ isLoggingOut ? 'Déconnexion...' : 'Déconnexion' }}
-                  </button>
+                  <div class="py-2">
+                    <RouterLink
+                      to="/profile"
+                      class="dropdown-item"
+                    >
+                      Profil
+                    </RouterLink>
+                    <RouterLink
+                      to="/messages"
+                      class="dropdown-item"
+                    >
+                      Messages
+                    </RouterLink>
+                    <RouterLink
+                      to="/bookings"
+                      class="dropdown-item"
+                    >
+                      Voyages
+                    </RouterLink>
+                  </div>
+                  <div class="dropdown-divider">
+                    <button
+                      class="dropdown-item w-full text-left"
+                      type="button"
+                      @click="auth.logout"
+                    >
+                      Déconnexion
+                    </button>
+                  </div>
                 </div>
               </div>
             </nav>
           </div>
         </header>
 
-        <main class="flex-1 px-6 py-10">
-          <RouterView />
+        <!-- Main Content -->
+        <main class="main-content">
+          <div class="mx-auto max-w-[2520px] px-6 py-8 lg:px-20 lg:py-12">
+            <RouterView />
+          </div>
         </main>
       </div>
     </div>
 
+    <!-- Mobile Sidebar Overlay -->
     <div
       v-if="sidebarOpen"
       class="fixed inset-0 z-50 flex md:hidden"
       role="dialog"
       aria-modal="true"
     >
-      <div class="absolute inset-0 bg-slate-900/30" @click="sidebarOpen = false"></div>
-      <aside class="relative h-full w-72 bg-white p-6 shadow-xl">
-        <button
-          class="mb-6 rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold"
-          type="button"
-          @click="sidebarOpen = false"
-        >
-          Fermer
-        </button>
-        <nav class="flex flex-col gap-2 text-sm text-slate-600">
-          <RouterLink to="/host" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="sidebarOpen = false"></div>
+      <aside class="mobile-sidebar">
+        <div class="mb-8 flex items-center justify-between">
+          <ClickSpark :count="12" :colors="['#FF385C', '#E61E4D', '#ffd700', '#ff6b6b']" :size="6">
+            <RouterLink to="/" class="text-xl font-semibold tracking-tight text-[#FF385C]">
+              Fakebnb
+            </RouterLink>
+          </ClickSpark>
+          <button
+            class="close-btn"
+            type="button"
+            @click="sidebarOpen = false"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <nav class="flex flex-col gap-1">
+          <RouterLink
+            to="/host"
+            class="nav-link"
+            @click="sidebarOpen = false"
+          >
             Tableau de bord
           </RouterLink>
-          <RouterLink to="/host/listings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Mes annonces
+          <RouterLink
+            to="/host/listings"
+            class="nav-link"
+            @click="sidebarOpen = false"
+          >
+            Annonces
           </RouterLink>
-          <RouterLink to="/host/listings/new" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Nouvelle annonce
+          <RouterLink
+            to="/host/listings/new"
+            class="nav-link"
+            @click="sidebarOpen = false"
+          >
+            Créer une annonce
           </RouterLink>
-          <RouterLink to="/host/bookings" class="rounded-xl px-3 py-2 hover:bg-slate-50">
-            Réservations reçues
+          <RouterLink
+            to="/host/bookings"
+            class="nav-link"
+            @click="sidebarOpen = false"
+          >
+            Réservations
           </RouterLink>
-          <RouterLink to="/host/cohosts" class="rounded-xl px-3 py-2 hover:bg-slate-50">
+          <RouterLink
+            to="/host/cohosts"
+            class="nav-link"
+            @click="sidebarOpen = false"
+          >
             Co-hôtes
           </RouterLink>
         </nav>
@@ -301,3 +358,213 @@ watch(
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Container principal */
+.app-container {
+  min-height: 100vh;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+/* Sidebar */
+.sidebar {
+  width: 16rem;
+  flex-direction: column;
+  border-right: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-primary);
+  padding: 2rem 1.5rem;
+  transition: background-color var(--transition-base), border-color var(--transition-base);
+}
+
+.sidebar-footer {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Header */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-primary);
+  transition: background-color var(--transition-base), border-color var(--transition-base);
+}
+
+/* Main content */
+.main-content {
+  flex: 1;
+  background-color: var(--color-bg-primary);
+  transition: background-color var(--transition-base);
+}
+
+/* Navigation links */
+.nav-link {
+  display: block;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.nav-link:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.nav-link-header {
+  padding: 0.625rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.nav-link-header:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+/* Buttons */
+.btn-primary {
+  padding: 0.625rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(to right, #E61E4D, #D70466);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.btn-primary:hover {
+  box-shadow: var(--shadow-md);
+  transform: scale(1.02);
+}
+
+.btn-outline {
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background-color: transparent;
+  border: 1px solid var(--color-border-primary);
+  transition: all var(--transition-fast);
+}
+
+.btn-outline:hover {
+  border-color: var(--color-text-primary);
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+/* User menu button */
+.user-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-primary);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-fast);
+}
+
+.user-menu-btn:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Mobile menu button */
+.mobile-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-fast);
+}
+
+.mobile-menu-btn:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Dropdown menu */
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  margin-top: 0.5rem;
+  width: 15rem;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-elevated);
+  box-shadow: var(--shadow-xl);
+}
+
+.dropdown-item {
+  display: block;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.dropdown-item:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.dropdown-divider {
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--color-border-primary);
+}
+
+/* Mobile sidebar */
+.mobile-sidebar {
+  position: relative;
+  height: 100%;
+  width: 20rem;
+  padding: 2rem 1.5rem;
+  background-color: var(--color-bg-primary);
+  box-shadow: var(--shadow-xl);
+}
+
+.close-btn {
+  padding: 0.5rem;
+  border-radius: 9999px;
+  color: var(--color-text-secondary);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.close-btn:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+/* Text utilities */
+.text-primary {
+  color: var(--color-text-primary);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+</style>

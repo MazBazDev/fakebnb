@@ -28,7 +28,7 @@ async function load() {
   error.value = null
 
   try {
-    const listingsResponse = await fetchMyListings({ per_page: 1 })
+    const listingsResponse = await fetchMyListings({ per_page: 100 })
     listings.value = listingsResponse.data ?? []
     const totalListings = listingsResponse.meta?.total ?? listingsResponse.data.length
 
@@ -102,61 +102,114 @@ onMounted(load)
 </script>
 
 <template>
-  <section class="space-y-8">
-    <header class="space-y-2">
+  <section class="cohosts-view">
+    <header class="header">
       <Breadcrumbs :items="[{ label: 'Hôte', to: '/host' }, { label: 'Co-hôtes' }]" />
-      <h1 class="text-3xl font-semibold text-slate-900">Gérer les délégations</h1>
-      <p class="text-sm text-slate-500">
+      <h1 class="title">Gérer les délégations</h1>
+      <p class="subtitle">
         Ajoute un co-hôte par email et configure ses permissions par annonce.
       </p>
     </header>
 
-    <div class="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+    <div class="content-grid">
       <form
-        class="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+        class="form-card"
         @submit.prevent="submit"
       >
-        <div class="space-y-2">
-          <label class="text-sm font-medium text-slate-700">Annonce</label>
-          <select
-            v-model="form.listing_id"
-            class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
-            required
-          >
-            <option value="" disabled>Choisir une annonce</option>
-            <option v-for="listing in listings" :key="listing.id" :value="listing.id">
-              {{ listing.title }} — {{ listing.city }}
-            </option>
-          </select>
-        </div>
-        <div class="space-y-2">
-          <label class="text-sm font-medium text-slate-700">Email du co-hôte</label>
-          <input
-            v-model="form.cohost_email"
-            type="email"
-            class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm"
-            required
-          />
+        <div class="form-group">
+          <label class="form-label">Annonce</label>
+          <div class="select-wrapper">
+            <div class="select-icon-left">
+              <svg class="icon" fill="none" viewBox="0 0 24 24">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                />
+              </svg>
+            </div>
+            <select
+              v-model="form.listing_id"
+              class="form-select"
+              required
+            >
+              <option value="" disabled>Choisir une annonce</option>
+              <option v-for="listing in listings" :key="listing.id" :value="listing.id">
+                {{ listing.title }} — {{ listing.city }}
+              </option>
+            </select>
+            <div class="select-icon-right">
+              <svg class="icon" fill="none" viewBox="0 0 24 24">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
+          </div>
         </div>
 
-        <div class="space-y-2">
-          <label class="text-sm font-medium text-slate-700">Permissions</label>
-          <label class="flex items-center gap-2 text-sm text-slate-600">
-            <input v-model="form.can_read_conversations" type="checkbox" />
-            Lire les conversations
-          </label>
-          <label class="flex items-center gap-2 text-sm text-slate-600">
-            <input v-model="form.can_reply_messages" type="checkbox" />
-            Répondre aux messages
-          </label>
-          <label class="flex items-center gap-2 text-sm text-slate-600">
-            <input v-model="form.can_edit_listings" type="checkbox" />
-            Modifier les annonces
-          </label>
+        <div class="form-group">
+          <label class="form-label">Email du co-hôte</label>
+          <div class="input-wrapper">
+            <div class="input-icon-left">
+              <svg class="icon" fill="none" viewBox="0 0 24 24">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            <input
+              v-model="form.cohost_email"
+              type="email"
+              class="form-input"
+              placeholder="exemple@email.com"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Permissions</label>
+          <div class="permissions-list">
+            <label class="permission-item">
+              <input
+                v-model="form.can_read_conversations"
+                type="checkbox"
+                class="permission-checkbox"
+              />
+              <span class="permission-text">Lire les conversations</span>
+            </label>
+            <label class="permission-item">
+              <input
+                v-model="form.can_reply_messages"
+                type="checkbox"
+                class="permission-checkbox"
+              />
+              <span class="permission-text">Répondre aux messages</span>
+            </label>
+            <label class="permission-item">
+              <input
+                v-model="form.can_edit_listings"
+                type="checkbox"
+                class="permission-checkbox"
+              />
+              <span class="permission-text">Modifier les annonces</span>
+            </label>
+          </div>
         </div>
 
         <button
-          class="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          class="submit-btn"
           :disabled="creating"
           type="submit"
         >
@@ -164,43 +217,53 @@ onMounted(load)
         </button>
       </form>
 
-      <div class="space-y-4">
-        <div v-if="error" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
+      <div class="cohosts-list">
+        <div v-if="error" class="error-message">
           {{ error }}
         </div>
 
         <div
           v-if="isLoading"
-          class="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500"
+          class="loading-card"
         >
-          Chargement des co-hôtes...
+          <div class="spinner"></div>
+          <span>Chargement des co-hôtes...</span>
         </div>
 
         <div
           v-else-if="cohosts.length === 0"
-          class="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500"
+          class="empty-card"
         >
-          Aucun co-hôte pour le moment.
+          <svg class="empty-icon" fill="none" viewBox="0 0 24 24">
+            <path
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+            />
+          </svg>
+          <p>Aucun co-hôte pour le moment.</p>
         </div>
 
-        <div v-else class="space-y-3">
+        <div v-else class="cohosts-cards">
           <article
             v-for="cohost in cohosts"
             :key="cohost.id"
-            class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            class="cohost-card"
           >
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-semibold text-slate-800">
+            <div class="cohost-header">
+              <div class="cohost-info">
+                <p class="cohost-name">
                   {{ cohost.cohost?.name ?? 'Utilisateur #' + cohost.cohost_user_id }}
                 </p>
-                <p class="text-xs text-slate-500">{{ cohost.cohost?.email }}</p>
-                <p class="text-xs text-slate-400">
+                <p class="cohost-email">{{ cohost.cohost?.email }}</p>
+                <p class="cohost-listing">
                   {{ cohost.listing?.title ?? 'Annonce #' + cohost.listing_id }}
                 </p>
               </div>
               <button
-                class="text-xs font-semibold text-rose-600 hover:text-rose-700"
+                class="delete-btn"
                 type="button"
                 @click="removeCohost(cohost)"
               >
@@ -208,30 +271,33 @@ onMounted(load)
               </button>
             </div>
 
-            <div class="mt-4 grid gap-3 text-sm text-slate-600 md:grid-cols-3">
-              <label class="flex items-center gap-2">
+            <div class="cohost-permissions">
+              <label class="permission-toggle">
                 <input
                   type="checkbox"
+                  class="permission-checkbox"
                   :checked="cohost.can_read_conversations"
                   @change="togglePermission(cohost, 'can_read_conversations')"
                 />
-                Lire les conversations
+                <span class="permission-text">Lire les conversations</span>
               </label>
-              <label class="flex items-center gap-2">
+              <label class="permission-toggle">
                 <input
                   type="checkbox"
+                  class="permission-checkbox"
                   :checked="cohost.can_reply_messages"
                   @change="togglePermission(cohost, 'can_reply_messages')"
                 />
-                Répondre
+                <span class="permission-text">Répondre</span>
               </label>
-              <label class="flex items-center gap-2">
+              <label class="permission-toggle">
                 <input
                   type="checkbox"
+                  class="permission-checkbox"
                   :checked="cohost.can_edit_listings"
                   @change="togglePermission(cohost, 'can_edit_listings')"
                 />
-                Modifier annonces
+                <span class="permission-text">Modifier annonces</span>
               </label>
             </div>
           </article>
@@ -240,3 +306,353 @@ onMounted(load)
     </div>
   </section>
 </template>
+
+<style scoped>
+.cohosts-view {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.title {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.content-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1fr 1.4fr;
+  }
+}
+
+/* Form Card */
+.form-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border-radius: 1.5rem;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-elevated);
+  box-shadow: var(--shadow-sm);
+  height: fit-content;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+}
+
+/* Select Wrapper - Style Airbnb */
+.select-wrapper {
+  position: relative;
+}
+
+.select-icon-left {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--color-text-tertiary);
+}
+
+.select-icon-right {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--color-text-tertiary);
+}
+
+.icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.form-select {
+  width: 100%;
+  padding: 0.75rem 2.5rem 0.75rem 3rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  appearance: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-select:hover {
+  border-color: var(--color-text-tertiary);
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--color-text-primary);
+  box-shadow: 0 0 0 2px var(--color-text-primary);
+}
+
+/* Input Wrapper */
+.input-wrapper {
+  position: relative;
+}
+
+.input-icon-left {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--color-text-tertiary);
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.form-input:hover {
+  border-color: var(--color-text-tertiary);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-text-primary);
+  box-shadow: 0 0 0 2px var(--color-text-primary);
+}
+
+/* Permissions */
+.permissions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.permission-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.permission-checkbox {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 0.25rem;
+  border: 2px solid var(--color-border-primary);
+  cursor: pointer;
+  accent-color: var(--color-brand-primary);
+}
+
+.permission-text {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+/* Submit Button */
+.submit-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background-color: var(--color-text-primary);
+  color: var(--color-text-inverse);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.submit-btn:hover:not(:disabled) {
+  background-color: var(--color-brand-primary);
+  transform: translateY(-1px);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Cohosts List */
+.cohosts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.error-message {
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
+  font-size: 0.875rem;
+}
+
+.loading-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-elevated);
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--color-border-primary);
+  border-top-color: var(--color-brand-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  border-radius: 1rem;
+  border: 1px dashed var(--color-border-primary);
+  background-color: var(--color-bg-elevated);
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.empty-icon {
+  width: 3rem;
+  height: 3rem;
+  color: var(--color-text-tertiary);
+}
+
+.cohosts-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cohost-card {
+  padding: 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border-primary);
+  background-color: var(--color-bg-elevated);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-fast);
+}
+
+.cohost-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.cohost-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cohost-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.cohost-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.cohost-email {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.cohost-listing {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+}
+
+.delete-btn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-error);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.delete-btn:hover {
+  opacity: 0.7;
+}
+
+.cohost-permissions {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-secondary);
+}
+
+@media (min-width: 768px) {
+  .cohost-permissions {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.permission-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+</style>
