@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useNotificationsStore } from '@/stores/notifications'
 import { gravatarUrl } from '@/utils/gravatar'
 import NotificationBell from '@/components/NotificationBell.vue'
+import { startOAuthFlow } from '@/services/oauth'
 
 const auth = useAuthStore()
 const notifications = useNotificationsStore()
@@ -15,6 +16,7 @@ const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 const sidebarOpen = ref(false)
 let notificationInterval: number | null = null
+const isLoggingOut = ref(false)
 const apiOrigin = computed(() => {
   const apiBase = import.meta.env.VITE_API_URL ?? '/api/v1'
   if (apiBase.startsWith('http')) {
@@ -22,8 +24,6 @@ const apiOrigin = computed(() => {
   }
   return window.location.origin
 })
-const loginUrl = computed(() => `${apiOrigin.value}/login`)
-const registerUrl = computed(() => `${apiOrigin.value}/register`)
 
 const avatarUrl = computed(() => {
   if (!auth.user) return null
@@ -58,6 +58,22 @@ onMounted(async () => {
 
 function toggleDropdown() {
   dropdownOpen.value = !dropdownOpen.value
+}
+
+async function redirectToOAuth(redirectTo = '/listings') {
+  await startOAuthFlow(redirectTo)
+}
+
+async function handleLogout() {
+  if (isLoggingOut.value) return
+  isLoggingOut.value = true
+
+  try {
+    await auth.logout()
+    window.location.href = `${apiOrigin.value}/logout?redirect=${encodeURIComponent(window.location.origin)}`
+  } finally {
+    isLoggingOut.value = false
+  }
 }
 
 function handleClickOutside(event: MouseEvent) {
@@ -145,9 +161,10 @@ watch(
           <button
             class="mt-4 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700"
             type="button"
-            @click="auth.logout"
+            :disabled="isLoggingOut"
+            @click="handleLogout"
           >
-            Déconnexion
+            {{ isLoggingOut ? 'Déconnexion...' : 'Déconnexion' }}
           </button>
         </div>
       </aside>
@@ -175,16 +192,22 @@ watch(
               >
                 {{ showSidebar ? 'Mode voyageur' : 'Mode hôte' }}
               </RouterLink>
-              <a v-if="!isAuthed" :href="loginUrl" class="text-slate-600 hover:text-slate-900">
-                Connexion
-              </a>
-              <a
+              <button
                 v-if="!isAuthed"
-                :href="registerUrl"
+                class="text-slate-600 hover:text-slate-900"
+                type="button"
+                @click="redirectToOAuth()"
+              >
+                Connexion
+              </button>
+              <button
+                v-if="!isAuthed"
                 class="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white"
+                type="button"
+                @click="redirectToOAuth()"
               >
                 S’inscrire
-              </a>
+              </button>
               <div v-if="isAuthed" ref="dropdownRef" class="relative">
                 <button
                   class="flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700"
@@ -225,9 +248,10 @@ watch(
                   <button
                     class="mt-1 w-full rounded-xl px-3 py-2 text-left text-rose-600 hover:bg-rose-50"
                     type="button"
-                    @click="auth.logout"
+                    :disabled="isLoggingOut"
+                    @click="handleLogout"
                   >
-                    Déconnexion
+                    {{ isLoggingOut ? 'Déconnexion...' : 'Déconnexion' }}
                   </button>
                 </div>
               </div>

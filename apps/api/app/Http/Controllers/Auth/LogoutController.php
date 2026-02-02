@@ -14,6 +14,8 @@ class LogoutController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/login');
+        $redirectTo = $request->query('redirect') ?: config('app.frontend_url');
+
+        return redirect()->to($redirectTo);
     }
 }

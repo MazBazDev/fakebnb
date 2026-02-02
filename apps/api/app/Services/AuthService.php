@@ -24,16 +24,17 @@ class AuthService
 
     public function logout(User $user): void
     {
-        $token = $user->token();
-        if (! $token) {
+        $tokenIds = $user->tokens()->pluck('id');
+        if ($tokenIds->isEmpty()) {
             return;
         }
 
-        $tokenId = $token->id;
-        $token->revoke();
+        DB::table('oauth_access_tokens')
+            ->whereIn('id', $tokenIds)
+            ->update(['revoked' => true]);
 
         DB::table('oauth_refresh_tokens')
-            ->where('access_token_id', $tokenId)
+            ->whereIn('access_token_id', $tokenIds)
             ->update(['revoked' => true]);
     }
 }

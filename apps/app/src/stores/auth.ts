@@ -78,7 +78,16 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await apiFetch('/auth/logout', { method: 'POST' })
     } catch (error) {
-      if (!(error instanceof ApiError)) {
+      if (error instanceof ApiError && error.status === 401) {
+        try {
+          await fetchMe()
+          await apiFetch('/auth/logout', { method: 'POST' })
+        } catch (retryError) {
+          if (!(retryError instanceof ApiError)) {
+            throw retryError
+          }
+        }
+      } else if (!(error instanceof ApiError)) {
         throw error
       }
     }
