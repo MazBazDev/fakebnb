@@ -18,6 +18,15 @@ const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 const sidebarOpen = ref(false)
 let notificationInterval: number | null = null
+const apiOrigin = computed(() => {
+  const apiBase = import.meta.env.VITE_API_URL ?? '/api/v1'
+  if (apiBase.startsWith('http')) {
+    return new URL(apiBase).origin
+  }
+  return window.location.origin
+})
+const loginUrl = computed(() => `${apiOrigin.value}/login`)
+const registerUrl = computed(() => `${apiOrigin.value}/register`)
 
 const avatarUrl = computed(() => {
   if (!auth.user) return null
@@ -202,20 +211,20 @@ watch(
               >
                 {{ showSidebar ? 'Voyageur' : 'Devenir hôte' }}
               </RouterLink>
-              <RouterLink
+              <a
                 v-if="!isAuthed"
-                to="/login"
+                :href="loginUrl"
                 class="nav-link-header"
               >
                 Connexion
-              </RouterLink>
+              </a>
               <ClickSpark v-if="!isAuthed" :count="15" :colors="['#ffd700', '#ff6b6b', '#4ecdc4', '#FF385C']" :size="8">
-                <RouterLink
-                  to="/register"
+                <a
+                  :href="registerUrl"
                   class="btn-primary"
                 >
                   S'inscrire
-                </RouterLink>
+                </a>
               </ClickSpark>
               <div v-if="isAuthed" ref="dropdownRef" class="relative">
                 <button
