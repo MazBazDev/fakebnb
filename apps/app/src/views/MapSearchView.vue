@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { fetchListings, type Listing } from '@/services/listings'
 import { useTheme } from '@/composables/useTheme'
+import { PageHeader } from '@/components/ui'
 
 const { isDark } = useTheme()
 
@@ -18,7 +18,7 @@ const minGuests = ref<number | ''>('')
 const total = ref(0)
 
 const mapContainer = ref<HTMLDivElement | null>(null)
-const map = ref<any>(null)
+const map = ref<maplibregl.Map | null>(null)
 const markers = ref<Array<{ remove: () => void }>>([])
 let moveTimeout: number | null = null
 
@@ -154,26 +154,29 @@ watch(isDark, () => {
 <template>
   <section class="map-search-view">
     <!-- Header -->
-    <header class="page-header">
-      <div class="header-content">
-        <Breadcrumbs :items="[{ label: 'Accueil', to: '/' }, { label: 'Carte' }]" />
-        <p class="page-label">Carte</p>
-        <h1 class="page-title">Recherche sur la carte</h1>
-        <p class="page-subtitle">Déplacez la carte pour filtrer les annonces.</p>
-      </div>
-      <RouterLink to="/" class="back-btn">
-        <svg class="back-icon" fill="none" viewBox="0 0 24 24">
-          <path
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M4 6h16M4 10h16M4 14h16M4 18h16"
-          />
-        </svg>
-        Voir en liste
-      </RouterLink>
-    </header>
+    <PageHeader
+      title="Recherche sur la carte"
+      subtitle="Déplacez la carte pour filtrer les annonces"
+      :breadcrumbs="[{ label: 'Accueil', to: '/' }, { label: 'Carte' }]"
+    >
+      <template #actions>
+        <RouterLink
+          to="/"
+          class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-[#222222] transition hover:border-black hover:bg-gray-50"
+        >
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6h16M4 10h16M4 14h16M4 18h16"
+            />
+          </svg>
+          Voir en liste
+        </RouterLink>
+      </template>
+    </PageHeader>
 
     <!-- Filters -->
     <div class="filters-card">

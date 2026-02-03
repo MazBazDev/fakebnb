@@ -13,9 +13,9 @@ const { isDark, toggleTheme } = useTheme()
         ? 'bg-slate-700/80 hover:bg-slate-600/90'
         : 'bg-gray-100 hover:bg-gray-200'
     ]"
-    @click="toggleTheme"
     :aria-label="isDark ? 'Passer au thème clair' : 'Passer au thème sombre'"
     :aria-pressed="isDark"
+    @click="toggleTheme"
   >
     <!-- Sun Icon (Light Mode) -->
     <Transition

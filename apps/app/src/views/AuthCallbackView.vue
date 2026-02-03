@@ -3,12 +3,14 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { exchangeAuthorizationCode } from '@/services/oauth'
+import { AlertMessage, LoadingSpinner } from '@/components/ui'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 
 const error = ref<string | null>(null)
+const isProcessing = ref(true)
 
 onMounted(async () => {
   const code = route.query.code as string | undefined
@@ -16,6 +18,7 @@ onMounted(async () => {
 
   if (!code || !state) {
     error.value = 'Réponse OAuth invalide.'
+    isProcessing.value = false
     return
   }
 
@@ -29,17 +32,29 @@ onMounted(async () => {
     await router.replace(redirectTo)
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Connexion impossible.'
+    isProcessing.value = false
   }
 })
 </script>
 
 <template>
-  <section class="mx-auto max-w-md space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-    <h1 class="text-xl font-semibold text-slate-900">Connexion en cours...</h1>
-    <p class="text-sm text-slate-500">Nous finalisons votre session.</p>
+  <section class="mx-auto max-w-md space-y-6 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+    <div class="text-center">
+      <h1 class="text-2xl font-semibold text-[#222222]">Connexion en cours</h1>
+      <p class="mt-2 text-sm text-gray-600">Nous finalisons votre session</p>
+    </div>
 
-    <p v-if="error" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
-      {{ error }}
-    </p>
+    <AlertMessage v-if="error" :message="error" type="error" />
+
+    <LoadingSpinner v-if="isProcessing && !error" text="Authentification..." />
+
+    <div v-if="error" class="text-center">
+      <RouterLink
+        to="/login"
+        class="inline-flex items-center gap-2 text-sm font-semibold text-[#222222] underline transition hover:text-[#E61E4D]"
+      >
+        Réessayer la connexion
+      </RouterLink>
+    </div>
   </section>
 </template>

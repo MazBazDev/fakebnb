@@ -20,7 +20,7 @@ function md5(input: string) {
   for (let i = 0; i < 8; i++) bytes.push((bitLen >>> (i * 8)) & 0xff)
 
   for (let i = 0; i < bytes.length; i += 64) {
-    const w = new Array<number>(16)
+    const w: number[] = Array.from({ length: 16 })
     for (let j = 0; j < 16; j++) {
       const k = i + j * 4
       const b0 = bytes[k] ?? 0

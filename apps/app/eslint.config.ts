@@ -18,8 +18,31 @@ export default defineConfigWithVueTs(
 
   globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
 
-  ...pluginVue.configs['flat/essential'],
+  // Upgraded from 'flat/essential' to 'flat/recommended' for stricter Vue rules
+  ...pluginVue.configs['flat/recommended'],
   vueTsConfigs.recommended,
+
+  // Custom Vue rules for better code quality
+  {
+    name: 'app/vue-rules',
+    files: ['**/*.vue'],
+    rules: {
+      // Enforce consistent attribute ordering
+      'vue/attributes-order': ['warn', { alphabetical: false }],
+      // Enforce component name casing
+      'vue/component-name-in-template-casing': ['warn', 'PascalCase'],
+      // Require explicit emits declaration
+      'vue/require-explicit-emits': 'warn',
+      // Enforce v-bind shorthand
+      'vue/v-bind-style': ['warn', 'shorthand'],
+      // Enforce v-on shorthand
+      'vue/v-on-style': ['warn', 'shorthand'],
+      // Allow v-html for flexibility (be careful with XSS)
+      'vue/no-v-html': 'off',
+      // Allow single-word component names (for views)
+      'vue/multi-word-component-names': 'off',
+    },
+  },
 
   {
     ...pluginVitest.configs.recommended,

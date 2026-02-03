@@ -1,9 +1,19 @@
 import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
 
-let echoInstance: Echo<any> | null = null
+type PusherConnector = {
+  pusher?: {
+    config?: {
+      auth?: {
+        headers?: Record<string, string>
+      }
+    }
+  }
+}
 
-export function getEcho(): Echo<any> {
+let echoInstance: Echo<'reverb'> | null = null
+
+export function getEcho(): Echo<'reverb'> {
   if (echoInstance) {
     return echoInstance
   }
@@ -41,7 +51,7 @@ export function setEchoAuthToken(token: string | null) {
     },
   }
 
-  const connector = echo.connector as { pusher?: { config?: { auth?: { headers?: any } } } }
+  const connector = echo.connector as PusherConnector
   if (connector?.pusher?.config?.auth?.headers) {
     connector.pusher.config.auth.headers.Authorization = headerValue
   }

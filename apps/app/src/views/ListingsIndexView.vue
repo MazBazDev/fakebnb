@@ -1,97 +1,136 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { fetchListings, type Listing } from '@/services/listings'
+import { useAsyncData } from '@/composables'
+import { PageHeader, LoadingSpinner, EmptyState, AlertMessage } from '@/components/ui'
 
-const listings = ref<Listing[]>([])
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-
-async function load() {
-  isLoading.value = true
-  error.value = null
-
-  try {
+const {
+  data: listings,
+  isLoading,
+  error,
+  execute: load,
+} = useAsyncData<Listing[]>(
+  async () => {
     const response = await fetchListings()
-    listings.value = response.data
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Impossible de charger les annonces.'
-  } finally {
-    isLoading.value = false
+    return response.data
+  },
+  {
+    defaultValue: [],
+    errorMessage: 'Impossible de charger les annonces.',
   }
-}
+)
 
 onMounted(load)
 </script>
 
 <template>
   <section class="space-y-8">
-    <header class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      <div>
-        <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Annonces</p>
-        <h1 class="text-3xl font-semibold text-slate-900">Explore les logements</h1>
-      </div>
-      <RouterLink
-        to="/host/listings/new"
-        class="inline-flex rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
-      >
-        Publier une annonce
-      </RouterLink>
-    </header>
-
-    <div v-if="error" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
-      {{ error }}
-    </div>
-
-    <div
-      v-if="isLoading"
-      class="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500"
+    <PageHeader
+      title="Explore les logements"
+      subtitle="Découvrez nos annonces disponibles"
+      :breadcrumbs="[{ label: 'Accueil', to: '/' }, { label: 'Annonces' }]"
     >
-      Chargement des annonces...
-    </div>
+      <template #actions>
+        <RouterLink
+          to="/host/listings/new"
+          class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#E61E4D] to-[#D70466] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-md"
+        >
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          Publier une annonce
+        </RouterLink>
+      </template>
+    </PageHeader>
 
-    <div
+    <AlertMessage v-if="error" :message="error" type="error" />
+
+    <LoadingSpinner v-if="isLoading" text="Chargement des annonces..." full-container />
+
+    <EmptyState
       v-else-if="listings.length === 0"
-      class="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500"
-    >
-      Aucune annonce publiée.
-    </div>
+      title="Aucune annonce publiée"
+      subtitle="Soyez le premier à publier une annonce sur notre plateforme"
+      icon="listings"
+      action-text="Publier une annonce"
+      action-to="/host/listings/new"
+      dashed
+    />
 
-    <div v-else class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+    <div v-else class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       <article
         v-for="listing in listings"
         :key="listing.id"
-        class="group flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+        class="group flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
       >
-        <div class="flex-1 space-y-3">
-          <div class="flex items-center justify-between">
-            <span class="text-xs uppercase tracking-[0.2em] text-slate-400">
-              {{ listing.city }}
-            </span>
-            <span class="text-xs font-semibold text-slate-700">
-              {{ listing.price_per_night }} €/nuit
-            </span>
-          </div>
-          <h2 class="text-lg font-semibold text-slate-900">{{ listing.title }}</h2>
-          <p class="text-sm text-slate-500">
-            {{ listing.description.slice(0, 120) }}{{ listing.description.length > 120 ? '…' : '' }}
-          </p>
-        </div>
-
-        <div v-if="listing.images?.length" class="mt-3 overflow-hidden rounded-2xl">
+        <!-- Image -->
+        <div class="relative aspect-[4/3] overflow-hidden bg-gray-100">
           <img
+            v-if="listing.images?.length"
             :src="listing.images[0]?.url"
-            class="h-40 w-full object-cover transition duration-300 group-hover:scale-105"
-            alt=""
+            :alt="listing.title"
+            class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            loading="lazy"
           />
+          <div
+            v-else
+            class="flex h-full w-full items-center justify-center text-gray-400"
+            aria-label="Aucune image"
+          >
+            <svg class="h-12 w-12" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
         </div>
 
-        <RouterLink
-          :to="`/listings/${listing.id}`"
-          class="mt-4 inline-flex text-sm font-semibold text-slate-900 group-hover:underline"
-        >
-          Voir le détail
-        </RouterLink>
+        <!-- Content -->
+        <div class="flex flex-1 flex-col p-5">
+          <div class="flex-1 space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-sm font-medium text-gray-500">{{ listing.city }}</span>
+              <span class="text-sm font-semibold text-[#222222]">
+                {{ listing.price_per_night }} € / nuit
+              </span>
+            </div>
+
+            <h2 class="text-lg font-semibold text-[#222222] line-clamp-1">
+              {{ listing.title }}
+            </h2>
+
+            <p class="text-sm text-gray-600 line-clamp-2">
+              {{ listing.description }}
+            </p>
+          </div>
+
+          <RouterLink
+            :to="`/listings/${listing.id}`"
+            class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#222222] transition hover:text-[#E61E4D]"
+          >
+            Voir le détail
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </RouterLink>
+        </div>
       </article>
     </div>
   </section>

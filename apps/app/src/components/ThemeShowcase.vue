@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTheme } from '@/composables/useTheme'
 
-const { theme, resolvedTheme, systemPreference, isDark, isLight, isSystem, setTheme, toggleTheme, cycleTheme } = useTheme()
+const { theme, resolvedTheme, systemPreference, isDark, setTheme, toggleTheme, cycleTheme } = useTheme()
 
 const themeOptions = [
   { value: 'light', label: '☀️ Clair', icon: 'sun' },

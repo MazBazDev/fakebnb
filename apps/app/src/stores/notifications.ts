@@ -9,7 +9,23 @@ import {
 } from '@/services/notifications'
 import { getEcho, setEchoAuthToken } from '@/services/echo'
 
-function normalizeNotification(raw: any): NotificationItem {
+/** Raw notification payload from the API or WebSocket */
+interface RawNotification {
+  id?: string
+  type?: string
+  data?: {
+    id?: string
+    type?: string
+    title?: string | null
+    body?: string | null
+    action_url?: string | null
+    [key: string]: unknown
+  }
+  read_at?: string | null
+  created_at?: string | null
+}
+
+function normalizeNotification(raw: RawNotification): NotificationItem {
   const data = raw?.data ?? {}
   const fallbackId =
     typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -60,7 +76,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     unreadCount.value = response.count
   }
 
-  function receive(raw: any) {
+  function receive(raw: RawNotification) {
     const notification = normalizeNotification(raw)
     items.value = [notification, ...items.value.filter((item) => item.id !== notification.id)]
     if (!notification.is_read) {
@@ -92,12 +108,15 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
     getEcho()
       .private(`App.Models.User.${userId}`)
-      .notification((notification: any) => {
+      .notification((notification: RawNotification) => {
         receive(notification)
       })
-      .listen('.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated', (notification: any) => {
-        receive(notification)
-      })
+      .listen(
+        '.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated',
+        (notification: RawNotification) => {
+          receive(notification)
+        }
+      )
   }
 
   function clear() {

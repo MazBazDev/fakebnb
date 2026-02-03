@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
-import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import { startOAuthFlow } from '@/services/oauth'
+import { PageHeader, AlertMessage } from '@/components/ui'
 
 const route = useRoute()
 const error = ref<string | null>(null)
@@ -23,97 +23,65 @@ async function submit() {
 </script>
 
 <template>
-  <section class="auth-container">
-    <header class="auth-header">
-      <Breadcrumbs :items="[{ label: 'Accueil', to: '/' }, { label: 'Connexion' }]" />
-      <h1 class="auth-title">Connexion</h1>
-      <p class="auth-subtitle">Vous allez être redirigé vers Fakebnb SSO.</p>
-    </header>
+  <section class="mx-auto max-w-md space-y-8">
+    <PageHeader
+      title="Connexion"
+      subtitle="Vous allez être redirigé vers Fakebnb SSO"
+      :breadcrumbs="[{ label: 'Accueil', to: '/' }, { label: 'Connexion' }]"
+    />
 
-    <div class="auth-card">
-      <p v-if="error" class="error-message">
-        {{ error }}
-      </p>
+    <div class="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+      <AlertMessage v-if="error" :message="error" type="error" class="mb-6" />
 
       <button
-        class="submit-btn"
+        class="w-full rounded-lg bg-gradient-to-r from-[#E61E4D] to-[#D70466] px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
         :disabled="isLoading"
         type="button"
         @click="submit"
       >
-        {{ isLoading ? 'Redirection...' : 'Continuer avec Fakebnb' }}
+        <span v-if="isLoading" class="inline-flex items-center gap-2">
+          <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          Redirection en cours...
+        </span>
+        <span v-else class="inline-flex items-center gap-2">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+            />
+          </svg>
+          Continuer avec Fakebnb
+        </span>
       </button>
+
+      <div class="mt-6 border-t border-gray-100 pt-6 text-center">
+        <p class="text-sm text-gray-600">
+          Pas encore de compte ?
+          <RouterLink
+            to="/register"
+            class="font-semibold text-[#222222] underline transition hover:text-[#E61E4D]"
+          >
+            Inscrivez-vous
+          </RouterLink>
+        </p>
+      </div>
     </div>
   </section>
 </template>
-
-<style scoped>
-.auth-container {
-  max-width: 28rem;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.auth-header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.auth-title {
-  font-size: 2rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--color-text-primary);
-}
-
-.auth-subtitle {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-}
-
-.auth-card {
-  padding: 2rem;
-  border-radius: 1.5rem;
-  border: 1px solid var(--color-border-primary);
-  background-color: var(--color-bg-elevated);
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.error-message {
-  padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
-  background-color: var(--color-error-bg);
-  color: var(--color-error);
-  font-size: 0.875rem;
-}
-
-.submit-btn {
-  width: 100%;
-  padding: 0.875rem 1.5rem;
-  border-radius: 0.75rem;
-  border: none;
-  background: linear-gradient(to right, #E61E4D, #D70466);
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--transition-fast), opacity var(--transition-fast), transform var(--transition-fast);
-}
-
-.submit-btn:hover:not(:disabled) {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
-
-.submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-</style>

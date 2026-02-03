@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import Breadcrumbs from '@/components/Breadcrumbs.vue'
+import { computed, ref } from 'vue'
 import {
   createCohost,
   deleteCohost,
@@ -9,12 +8,15 @@ import {
   type Cohost,
 } from '@/services/cohosts'
 import { fetchMyListings, type Listing } from '@/services/listings'
+import { useAsyncData, useFormSubmit } from '@/composables'
+import { PageHeader, LoadingSpinner, EmptyState, AlertMessage } from '@/components/ui'
 
+// Data
 const cohosts = ref<Cohost[]>([])
 const listings = ref<Listing[]>([])
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-const creating = ref(false)
+const actionError = ref<string | null>(null)
+
+// Form state
 const form = ref({
   listing_id: '',
   cohost_email: '',
@@ -23,34 +25,28 @@ const form = ref({
   can_edit_listings: false,
 })
 
-async function load() {
-  isLoading.value = true
-  error.value = null
-
-  try {
+// Data fetching
+const { isLoading, error: loadError } = useAsyncData(
+  async () => {
     const listingsResponse = await fetchMyListings({ per_page: 100 })
     listings.value = listingsResponse.data ?? []
     const totalListings = listingsResponse.meta?.total ?? listingsResponse.data.length
 
     if (totalListings === 0) {
-      error.value = 'Accès réservé aux hôtes ayant des annonces.'
-      return
+      throw new Error('Accès réservé aux hôtes ayant des annonces.')
     }
 
     const cohostsData = await fetchCohosts()
     cohosts.value = cohostsData
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Impossible de charger les co-hôtes.'
-  } finally {
-    isLoading.value = false
-  }
-}
 
-async function submit() {
-  error.value = null
-  creating.value = true
+    return { listings: listings.value, cohosts: cohostsData }
+  },
+  { errorMessage: 'Impossible de charger les co-hôtes.' }
+)
 
-  try {
+// Form submission for creating cohost
+const { isSubmitting: creating, error: createError, submit: submitCreate } = useFormSubmit(
+  async () => {
     const created = await createCohost({
       listing_id: Number(form.value.listing_id),
       cohost_email: form.value.cohost_email,
@@ -58,601 +54,316 @@ async function submit() {
       can_reply_messages: form.value.can_reply_messages,
       can_edit_listings: form.value.can_edit_listings,
     })
+
     cohosts.value = [created, ...cohosts.value]
-    form.value = {
-      listing_id: '',
-      cohost_email: '',
-      can_read_conversations: false,
-      can_reply_messages: false,
-      can_edit_listings: false,
-    }
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Impossible de créer le co-hôte.'
-  } finally {
-    creating.value = false
+    resetForm()
+    return created
+  },
+  { errorMessage: 'Impossible de créer le co-hôte.' }
+)
+
+// Computed
+const breadcrumbs = [
+  { label: 'Hôte', to: '/host' },
+  { label: 'Co-hôtes' },
+]
+
+const displayError = computed(() => loadError.value || createError.value || actionError.value)
+
+// Methods
+function resetForm() {
+  form.value = {
+    listing_id: '',
+    cohost_email: '',
+    can_read_conversations: false,
+    can_reply_messages: false,
+    can_edit_listings: false,
   }
 }
 
 type PermissionKey = 'can_read_conversations' | 'can_reply_messages' | 'can_edit_listings'
 
 async function togglePermission(cohost: Cohost, key: PermissionKey) {
-  error.value = null
+  actionError.value = null
   const nextValue = !cohost[key]
 
   try {
     const updated = await updateCohost(cohost.id, { [key]: nextValue })
     cohosts.value = cohosts.value.map((item) => (item.id === updated.id ? updated : item))
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Impossible de mettre à jour.'
+    actionError.value = err instanceof Error ? err.message : 'Impossible de mettre à jour.'
   }
 }
 
 async function removeCohost(cohost: Cohost) {
-  error.value = null
+  actionError.value = null
+
+  if (!confirm(`Êtes-vous sûr de vouloir supprimer ce co-hôte ?`)) return
 
   try {
     await deleteCohost(cohost.id)
     cohosts.value = cohosts.value.filter((item) => item.id !== cohost.id)
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Impossible de supprimer.'
+    actionError.value = err instanceof Error ? err.message : 'Impossible de supprimer.'
   }
 }
 
-onMounted(load)
+function getCohostName(cohost: Cohost): string {
+  return cohost.cohost?.name ?? `Utilisateur #${cohost.cohost_user_id}`
+}
+
+function getListingName(cohost: Cohost): string {
+  return cohost.listing?.title ?? `Annonce #${cohost.listing_id}`
+}
+
 </script>
 
 <template>
-  <section class="cohosts-view">
-    <header class="header">
-      <Breadcrumbs :items="[{ label: 'Hôte', to: '/host' }, { label: 'Co-hôtes' }]" />
-      <h1 class="title">Gérer les délégations</h1>
-      <p class="subtitle">
-        Ajoute un co-hôte par email et configure ses permissions par annonce.
-      </p>
-    </header>
+  <section class="space-y-8">
+    <PageHeader
+      title="Gérer les délégations"
+      subtitle="Ajoutez un co-hôte par email et configurez ses permissions par annonce"
+      :breadcrumbs="breadcrumbs"
+    />
 
-    <div class="content-grid">
-      <form
-        class="form-card"
-        @submit.prevent="submit"
-      >
-        <div class="form-group">
-          <label class="form-label">Annonce</label>
-          <div class="select-wrapper">
-            <div class="select-icon-left">
-              <svg class="icon" fill="none" viewBox="0 0 24 24">
-                <path
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                />
-              </svg>
-            </div>
-            <select
-              v-model="form.listing_id"
-              class="form-select"
-              required
-            >
-              <option value="" disabled>Choisir une annonce</option>
-              <option v-for="listing in listings" :key="listing.id" :value="listing.id">
-                {{ listing.title }} — {{ listing.city }}
-              </option>
-            </select>
-            <div class="select-icon-right">
-              <svg class="icon" fill="none" viewBox="0 0 24 24">
-                <path
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
+    <!-- Error Messages -->
+    <AlertMessage v-if="displayError" :message="displayError" type="error" />
 
-        <div class="form-group">
-          <label class="form-label">Email du co-hôte</label>
-          <div class="input-wrapper">
-            <div class="input-icon-left">
-              <svg class="icon" fill="none" viewBox="0 0 24 24">
-                <path
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
-              </svg>
-            </div>
-            <input
-              v-model="form.cohost_email"
-              type="email"
-              class="form-input"
-              placeholder="exemple@email.com"
-              required
-            />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Permissions</label>
-          <div class="permissions-list">
-            <label class="permission-item">
-              <input
-                v-model="form.can_read_conversations"
-                type="checkbox"
-                class="permission-checkbox"
-              />
-              <span class="permission-text">Lire les conversations</span>
-            </label>
-            <label class="permission-item">
-              <input
-                v-model="form.can_reply_messages"
-                type="checkbox"
-                class="permission-checkbox"
-              />
-              <span class="permission-text">Répondre aux messages</span>
-            </label>
-            <label class="permission-item">
-              <input
-                v-model="form.can_edit_listings"
-                type="checkbox"
-                class="permission-checkbox"
-              />
-              <span class="permission-text">Modifier les annonces</span>
-            </label>
-          </div>
-        </div>
-
-        <button
-          class="submit-btn"
-          :disabled="creating"
-          type="submit"
+    <div class="grid gap-6 lg:grid-cols-5">
+      <!-- Form Card -->
+      <div class="lg:col-span-2">
+        <form
+          class="space-y-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
+          @submit.prevent="submitCreate"
         >
-          {{ creating ? 'Création...' : 'Ajouter un co-hôte' }}
-        </button>
-      </form>
+          <h2 class="text-lg font-semibold text-[#222222]">Ajouter un co-hôte</h2>
 
-      <div class="cohosts-list">
-        <div v-if="error" class="error-message">
-          {{ error }}
-        </div>
-
-        <div
-          v-if="isLoading"
-          class="loading-card"
-        >
-          <div class="spinner"></div>
-          <span>Chargement des co-hôtes...</span>
-        </div>
-
-        <div
-          v-else-if="cohosts.length === 0"
-          class="empty-card"
-        >
-          <svg class="empty-icon" fill="none" viewBox="0 0 24 24">
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.5"
-              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-            />
-          </svg>
-          <p>Aucun co-hôte pour le moment.</p>
-        </div>
-
-        <div v-else class="cohosts-cards">
-          <article
-            v-for="cohost in cohosts"
-            :key="cohost.id"
-            class="cohost-card"
-          >
-            <div class="cohost-header">
-              <div class="cohost-info">
-                <p class="cohost-name">
-                  {{ cohost.cohost?.name ?? 'Utilisateur #' + cohost.cohost_user_id }}
-                </p>
-                <p class="cohost-email">{{ cohost.cohost?.email }}</p>
-                <p class="cohost-listing">
-                  {{ cohost.listing?.title ?? 'Annonce #' + cohost.listing_id }}
-                </p>
+          <!-- Listing Select -->
+          <div class="space-y-2">
+            <label for="listing" class="block text-sm font-semibold text-[#222222]">
+              Annonce
+            </label>
+            <div class="relative">
+              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                  />
+                </svg>
               </div>
-              <button
-                class="delete-btn"
-                type="button"
-                @click="removeCohost(cohost)"
+              <select
+                id="listing"
+                v-model="form.listing_id"
+                class="w-full appearance-none rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-10 text-base text-[#222222] transition focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+                required
               >
-                Supprimer
-              </button>
+                <option value="" disabled>Choisir une annonce</option>
+                <option v-for="listing in listings" :key="listing.id" :value="listing.id">
+                  {{ listing.title }} — {{ listing.city }}
+                </option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
             </div>
+          </div>
 
-            <div class="cohost-permissions">
-              <label class="permission-toggle">
+          <!-- Email Input -->
+          <div class="space-y-2">
+            <label for="cohost_email" class="block text-sm font-semibold text-[#222222]">
+              Email du co-hôte
+            </label>
+            <div class="relative">
+              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <input
+                id="cohost_email"
+                v-model="form.cohost_email"
+                type="email"
+                class="w-full rounded-lg border border-gray-300 py-3 pl-10 pr-4 text-base text-[#222222] transition placeholder:text-gray-400 focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
+                placeholder="exemple@email.com"
+                required
+              />
+            </div>
+          </div>
+
+          <!-- Permissions -->
+          <div class="space-y-3">
+            <label class="block text-sm font-semibold text-[#222222]">Permissions</label>
+            <div class="space-y-2">
+              <label
+                class="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 transition hover:border-gray-300 has-[:checked]:border-black has-[:checked]:bg-gray-50"
+              >
                 <input
+                  v-model="form.can_read_conversations"
                   type="checkbox"
-                  class="permission-checkbox"
-                  :checked="cohost.can_read_conversations"
-                  @change="togglePermission(cohost, 'can_read_conversations')"
+                  class="h-4 w-4 rounded border-gray-300 text-[#222222] focus:ring-black"
                 />
-                <span class="permission-text">Lire les conversations</span>
+                <span class="text-sm text-[#222222]">Lire les conversations</span>
               </label>
-              <label class="permission-toggle">
+              <label
+                class="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 transition hover:border-gray-300 has-[:checked]:border-black has-[:checked]:bg-gray-50"
+              >
                 <input
+                  v-model="form.can_reply_messages"
                   type="checkbox"
-                  class="permission-checkbox"
-                  :checked="cohost.can_reply_messages"
-                  @change="togglePermission(cohost, 'can_reply_messages')"
+                  class="h-4 w-4 rounded border-gray-300 text-[#222222] focus:ring-black"
                 />
-                <span class="permission-text">Répondre</span>
+                <span class="text-sm text-[#222222]">Répondre aux messages</span>
               </label>
-              <label class="permission-toggle">
+              <label
+                class="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 transition hover:border-gray-300 has-[:checked]:border-black has-[:checked]:bg-gray-50"
+              >
                 <input
+                  v-model="form.can_edit_listings"
                   type="checkbox"
-                  class="permission-checkbox"
-                  :checked="cohost.can_edit_listings"
-                  @change="togglePermission(cohost, 'can_edit_listings')"
+                  class="h-4 w-4 rounded border-gray-300 text-[#222222] focus:ring-black"
                 />
-                <span class="permission-text">Modifier annonces</span>
+                <span class="text-sm text-[#222222]">Modifier les annonces</span>
               </label>
             </div>
-          </article>
+          </div>
+
+          <!-- Submit Button -->
+          <button
+            class="w-full rounded-lg bg-gradient-to-r from-[#E61E4D] to-[#D70466] px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="creating"
+            type="submit"
+          >
+            {{ creating ? 'Création en cours...' : 'Ajouter un co-hôte' }}
+          </button>
+        </form>
+      </div>
+
+      <!-- Cohosts List -->
+      <div class="lg:col-span-3">
+        <LoadingSpinner v-if="isLoading" text="Chargement des co-hôtes..." full-container />
+
+        <EmptyState
+          v-else-if="cohosts.length === 0"
+          title="Aucun co-hôte"
+          subtitle="Ajoutez votre premier co-hôte pour déléguer la gestion de vos annonces"
+          icon="users"
+          dashed
+        />
+
+        <div v-else class="space-y-4">
+          <h2 class="text-lg font-semibold text-[#222222]">
+            {{ cohosts.length }} co-hôte{{ cohosts.length > 1 ? 's' : '' }}
+          </h2>
+
+          <div class="space-y-3">
+            <article
+              v-for="cohost in cohosts"
+              :key="cohost.id"
+              class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+            >
+              <!-- Header -->
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex items-center gap-4">
+                  <!-- Avatar -->
+                  <div
+                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-lg font-semibold text-white"
+                  >
+                    {{ getCohostName(cohost).charAt(0).toUpperCase() }}
+                  </div>
+                  <div>
+                    <p class="font-semibold text-[#222222]">{{ getCohostName(cohost) }}</p>
+                    <p class="text-sm text-gray-500">{{ cohost.cohost?.email }}</p>
+                    <p class="mt-1 text-xs text-gray-400">{{ getListingName(cohost) }}</p>
+                  </div>
+                </div>
+
+                <button
+                  class="inline-flex items-center gap-1.5 text-sm font-medium text-red-600 transition hover:text-red-700"
+                  type="button"
+                  @click="removeCohost(cohost)"
+                >
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                  Supprimer
+                </button>
+              </div>
+
+              <!-- Permissions -->
+              <div class="mt-4 grid gap-3 border-t border-gray-100 pt-4 sm:grid-cols-3">
+                <label
+                  class="flex cursor-pointer items-center gap-2 text-sm"
+                  @click.prevent="togglePermission(cohost, 'can_read_conversations')"
+                >
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-gray-300 text-[#222222] focus:ring-black"
+                    :checked="cohost.can_read_conversations"
+                    @click.prevent
+                  />
+                  <span :class="cohost.can_read_conversations ? 'text-[#222222]' : 'text-gray-500'">
+                    Lire les conversations
+                  </span>
+                </label>
+
+                <label
+                  class="flex cursor-pointer items-center gap-2 text-sm"
+                  @click.prevent="togglePermission(cohost, 'can_reply_messages')"
+                >
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-gray-300 text-[#222222] focus:ring-black"
+                    :checked="cohost.can_reply_messages"
+                    @click.prevent
+                  />
+                  <span :class="cohost.can_reply_messages ? 'text-[#222222]' : 'text-gray-500'">
+                    Répondre
+                  </span>
+                </label>
+
+                <label
+                  class="flex cursor-pointer items-center gap-2 text-sm"
+                  @click.prevent="togglePermission(cohost, 'can_edit_listings')"
+                >
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-gray-300 text-[#222222] focus:ring-black"
+                    :checked="cohost.can_edit_listings"
+                    @click.prevent
+                  />
+                  <span :class="cohost.can_edit_listings ? 'text-[#222222]' : 'text-gray-500'">
+                    Modifier annonces
+                  </span>
+                </label>
+              </div>
+            </article>
+          </div>
         </div>
       </div>
     </div>
   </section>
 </template>
-
-<style scoped>
-.cohosts-view {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.title {
-  font-size: 1.875rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.subtitle {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-}
-
-.content-grid {
-  display: grid;
-  gap: 1.5rem;
-}
-
-@media (min-width: 1024px) {
-  .content-grid {
-    grid-template-columns: 1fr 1.4fr;
-  }
-}
-
-/* Form Card */
-.form-card {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  padding: 1.5rem;
-  border-radius: 1.5rem;
-  border: 1px solid var(--color-border-primary);
-  background-color: var(--color-bg-elevated);
-  box-shadow: var(--shadow-sm);
-  height: fit-content;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-tertiary);
-}
-
-/* Select Wrapper - Style Airbnb */
-.select-wrapper {
-  position: relative;
-}
-
-.select-icon-left {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: var(--color-text-tertiary);
-}
-
-.select-icon-right {
-  position: absolute;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: var(--color-text-tertiary);
-}
-
-.icon {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
-.form-select {
-  width: 100%;
-  padding: 0.75rem 2.5rem 0.75rem 3rem;
-  border-radius: 0.75rem;
-  border: 1px solid var(--color-border-primary);
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  cursor: pointer;
-  appearance: none;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.form-select:hover {
-  border-color: var(--color-text-tertiary);
-}
-
-.form-select:focus {
-  outline: none;
-  border-color: var(--color-text-primary);
-  box-shadow: 0 0 0 2px var(--color-text-primary);
-}
-
-/* Input Wrapper */
-.input-wrapper {
-  position: relative;
-}
-
-.input-icon-left {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: var(--color-text-tertiary);
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.75rem 1rem 0.75rem 3rem;
-  border-radius: 0.75rem;
-  border: 1px solid var(--color-border-primary);
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.form-input::placeholder {
-  color: var(--color-text-tertiary);
-}
-
-.form-input:hover {
-  border-color: var(--color-text-tertiary);
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-text-primary);
-  box-shadow: 0 0 0 2px var(--color-text-primary);
-}
-
-/* Permissions */
-.permissions-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.permission-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
-}
-
-.permission-checkbox {
-  width: 1.125rem;
-  height: 1.125rem;
-  border-radius: 0.25rem;
-  border: 2px solid var(--color-border-primary);
-  cursor: pointer;
-  accent-color: var(--color-brand-primary);
-}
-
-.permission-text {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-}
-
-/* Submit Button */
-.submit-btn {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
-  background-color: var(--color-text-primary);
-  color: var(--color-text-inverse);
-  font-size: 0.875rem;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: background-color var(--transition-fast), transform var(--transition-fast);
-}
-
-.submit-btn:hover:not(:disabled) {
-  background-color: var(--color-brand-primary);
-  transform: translateY(-1px);
-}
-
-.submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Cohosts List */
-.cohosts-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.error-message {
-  padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
-  background-color: var(--color-error-bg);
-  color: var(--color-error);
-  font-size: 0.875rem;
-}
-
-.loading-card {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1.5rem;
-  border-radius: 1rem;
-  border: 1px solid var(--color-border-primary);
-  background-color: var(--color-bg-elevated);
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-}
-
-.spinner {
-  width: 1.25rem;
-  height: 1.25rem;
-  border: 2px solid var(--color-border-primary);
-  border-top-color: var(--color-brand-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.empty-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 2rem;
-  border-radius: 1rem;
-  border: 1px dashed var(--color-border-primary);
-  background-color: var(--color-bg-elevated);
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-  text-align: center;
-}
-
-.empty-icon {
-  width: 3rem;
-  height: 3rem;
-  color: var(--color-text-tertiary);
-}
-
-.cohosts-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.cohost-card {
-  padding: 1.25rem;
-  border-radius: 1rem;
-  border: 1px solid var(--color-border-primary);
-  background-color: var(--color-bg-elevated);
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--transition-fast);
-}
-
-.cohost-card:hover {
-  box-shadow: var(--shadow-md);
-}
-
-.cohost-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.cohost-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-}
-
-.cohost-name {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.cohost-email {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-}
-
-.cohost-listing {
-  font-size: 0.75rem;
-  color: var(--color-text-tertiary);
-}
-
-.delete-btn {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-error);
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: opacity var(--transition-fast);
-}
-
-.delete-btn:hover {
-  opacity: 0.7;
-}
-
-.cohost-permissions {
-  display: grid;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-border-secondary);
-}
-
-@media (min-width: 768px) {
-  .cohost-permissions {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-.permission-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-}
-</style>

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, RouterLink, useRouter } from 'vue-router'
-import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import { fetchListing, type Listing } from '@/services/listings'
 import { createBooking, fetchListingBookings, fetchBookings, type Booking } from '@/services/bookings'
 import { createConversation } from '@/services/conversations'
 import { useAuthStore } from '@/stores/auth'
+import { getAmenityLabel } from '@/constants/amenities'
+import { PageHeader, LoadingSpinner, AlertMessage } from '@/components/ui'
 
 const route = useRoute()
 const router = useRouter()
@@ -136,18 +137,6 @@ function nextMonth() {
   activeMonth.value = new Date(
     Date.UTC(activeMonth.value.getUTCFullYear(), activeMonth.value.getUTCMonth() + 1, 1)
   )
-}
-const amenityLabels: Record<string, string> = {
-  wifi: 'Wi-Fi',
-  kitchen: 'Cuisine',
-  parking: 'Parking gratuit',
-  washer: 'Lave-linge',
-  tv: 'TV',
-  air_conditioning: 'Climatisation',
-  heating: 'Chauffage',
-  workspace: 'Espace de travail',
-  pool: 'Piscine',
-  hot_tub: 'Jacuzzi',
 }
 
 function formatStatus(status?: string | null) {
@@ -312,27 +301,28 @@ async function contactHost() {
 
 <template>
   <section class="space-y-8">
-    <RouterLink to="/listings" class="text-sm font-semibold text-slate-600 hover:text-slate-900">
-      ← Retour aux annonces
+    <RouterLink
+      to="/listings"
+      class="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 transition hover:text-[#222222]"
+    >
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      Retour aux annonces
     </RouterLink>
 
-    <div v-if="error" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">
-      {{ error }}
-    </div>
+    <AlertMessage v-if="error" :message="error" type="error" />
 
-    <div
-      v-if="isLoading"
-      class="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500"
-    >
-      Chargement de l’annonce...
-    </div>
+    <LoadingSpinner v-if="isLoading" text="Chargement de l'annonce..." full-container />
 
     <div v-else-if="listing" class="space-y-10">
       <header class="space-y-4">
-        <Breadcrumbs
-          :items="[
+        <PageHeader
+          :title="listing.title"
+          :subtitle="listing.address"
+          :breadcrumbs="[
             { label: 'Accueil', to: '/' },
-            { label: 'Annonces', to: '/' },
+            { label: 'Annonces', to: '/listings' },
             { label: listing.title },
           ]"
         />
@@ -451,7 +441,7 @@ async function contactHost() {
                 :key="amenity"
                 class="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600"
               >
-                {{ amenityLabels[amenity] ?? amenity.replace('_', ' ') }}
+                {{ getAmenityLabel(amenity) }}
               </span>
             </div>
 
@@ -593,18 +583,8 @@ async function contactHost() {
               </div>
             </div>
 
-            <div
-              v-if="bookingError"
-              class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600"
-            >
-              {{ bookingError }}
-            </div>
-            <div
-              v-if="bookingSuccess"
-              class="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-600"
-            >
-              {{ bookingSuccess }}
-            </div>
+            <AlertMessage v-if="bookingError" :message="bookingError" type="error" />
+            <AlertMessage v-if="bookingSuccess" :message="bookingSuccess" type="success" />
 
             <button
               class="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"

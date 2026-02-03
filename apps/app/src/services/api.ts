@@ -127,7 +127,7 @@ async function refreshAccessToken(): Promise<string | null> {
     })
 
     const text = await response.text()
-    let data: any = null
+    let data: unknown = null
     if (text) {
       try {
         data = JSON.parse(text)
@@ -158,10 +158,7 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
-export async function apiFetch<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
+export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   return apiFetchWithRetry<T>(path, options, true)
 }
 
@@ -183,12 +180,7 @@ export async function apiFetchWithCache<T>(
     headers.set('If-None-Match', cached.etag)
   }
 
-  const { response, data } = await apiFetchWithRetryRaw(
-    path,
-    { ...options, headers },
-    true,
-    true
-  )
+  const { response, data } = await apiFetchWithRetryRaw(path, { ...options, headers }, true, true)
 
   if (response.status === 304 && cached) {
     return cached.data
@@ -256,8 +248,7 @@ async function apiFetchWithRetryRaw(
     }
 
     const payload = data as ApiErrorPayload | null
-    const message =
-      payload?.message ?? response.statusText ?? 'Une erreur est survenue.'
+    const message = payload?.message ?? response.statusText ?? 'Une erreur est survenue.'
     throw new ApiError(response.status, message, payload ?? undefined)
   }
 

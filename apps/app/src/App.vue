@@ -308,7 +308,7 @@ watch(
         <!-- Main Content -->
         <main class="main-content">
           <div class="mx-auto max-w-[2520px] px-6 py-8 lg:px-20 lg:py-12">
-            <RouterView />
+            <RouterView :key="route.fullPath" />
           </div>
         </main>
       </div>
@@ -397,16 +397,20 @@ watch(
 
 /* Sidebar */
 .sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
   width: 16rem;
   flex-direction: column;
   border-right: 1px solid var(--color-border-primary);
   background-color: var(--color-bg-primary);
   padding: 2rem 1.5rem;
+  overflow-y: auto;
   transition: background-color var(--transition-base), border-color var(--transition-base);
 }
 
 .sidebar-footer {
-  margin-top: 2rem;
+  margin-top: auto;
   padding-top: 1.5rem;
   border-top: 1px solid var(--color-border-primary);
   display: flex;

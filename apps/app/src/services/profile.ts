@@ -1,5 +1,3 @@
-import { apiFetch } from '@/services/api'
-
 export type ProfilePayload = {
   name: string
   address?: string | null

@@ -16,7 +16,9 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "@types/matter-js": "^0.20.2",
     "maplibre-gl": "^5.17.0",
+    "matter-js": "^0.20.0",
     "pinia": "^3.0.4",
     "vue": "^3.5.27",
     "vue-router": "^4.6.4"
