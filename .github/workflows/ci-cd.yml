@@ -144,6 +144,27 @@ jobs:
     needs:
       - build-and-push
     steps:
+      - name: Debug deploy vars
+        run: |
+          echo "REGISTRY_HOST=${REGISTRY_HOST}"
+          echo "REGISTRY_USERNAME=${REGISTRY_USERNAME:+set}"
+          echo "REGISTRY_PASSWORD=${REGISTRY_PASSWORD:+set}"
+          echo "IMAGE_API=${IMAGE_API}"
+          echo "IMAGE_APP=${IMAGE_APP}"
+          echo "VPS_HOST=${VPS_HOST:+set}"
+          echo "VPS_USER=${VPS_USER:+set}"
+          echo "VPS_SSH_KEY=${VPS_SSH_KEY:+set}"
+          echo "VPS_PATH=${VPS_PATH}"
+        env:
+          REGISTRY_HOST: ${{ secrets.REGISTRY_HOST }}
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          IMAGE_API: ${{ secrets.IMAGE_API }}
+          IMAGE_APP: ${{ secrets.IMAGE_APP }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_PATH: ${{ secrets.VPS_PATH }}
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.1.0
         with:
