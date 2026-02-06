@@ -14,10 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->trustProxies(
-            at: ['*'],
-            headers: Request::HEADER_X_FORWARDED_TRAEFIK
-        );
+        if ('production' === config('app.env')) {
+            $middleware->trustProxies(
+                at: ['*'],
+                headers: Request::HEADER_X_FORWARDED_TRAEFIK
+            );
+        }
 
         $middleware->redirectGuestsTo(function ($request) {
             if ($request->expectsJson() || $request->is('api/*')) {
