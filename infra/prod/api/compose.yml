@@ -38,10 +38,7 @@ services:
       RUN_PASSPORT_INSTALL: "false"
     command: php artisan queue:work --tries=1
     healthcheck:
-      test: [ "CMD", "curl", "-fsS", "http://localhost/api/v1/health" ]
-      interval: 10s
-      timeout: 3s
-      retries: 6
+      disable: true
     depends_on:
       api:
         condition: service_healthy
@@ -62,10 +59,7 @@ services:
       RUN_SEED_ON_FIRST_BOOT: "false"
       RUN_PASSPORT_INSTALL: "false"
     healthcheck:
-      test: [ "CMD", "curl", "-fsS", "http://localhost/api/v1/health" ]
-      interval: 10s
-      timeout: 3s
-      retries: 6
+      disable: true
     command: php artisan reverb:start --host=0.0.0.0 --port=8080
     labels:
       - traefik.enable=true
