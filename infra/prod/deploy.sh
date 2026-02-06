@@ -13,10 +13,11 @@ APP_ENV_FILE="${APP_ENV_FILE:-infra/prod/app/.env}"
 
 REGISTRY_HOST_CLEAN="${REGISTRY_HOST#http://}"
 REGISTRY_HOST_CLEAN="${REGISTRY_HOST_CLEAN#https://}"
+REGISTRY_HOST_CLEAN="${REGISTRY_HOST_CLEAN%%/*}"
 REGISTRY_USERNAME_CLEAN="$(printf '%s' "${REGISTRY_USERNAME}" | tr -d '\r\n')"
 REGISTRY_PASSWORD_CLEAN="$(printf '%s' "${REGISTRY_PASSWORD}" | tr -d '\r\n')"
 
-echo "Logging into registry: ${REGISTRY_HOST_CLEAN} (user: ${REGISTRY_USERNAME_CLEAN})"
+echo "Logging into registry: ${REGISTRY_HOST_CLEAN} (user: ${REGISTRY_USERNAME_CLEAN}, pass_len: ${#REGISTRY_PASSWORD_CLEAN})"
 printf '%s' "${REGISTRY_PASSWORD_CLEAN}" | docker login "${REGISTRY_HOST_CLEAN}" -u "${REGISTRY_USERNAME_CLEAN}" --password-stdin
 
 echo "Deploying API stack"

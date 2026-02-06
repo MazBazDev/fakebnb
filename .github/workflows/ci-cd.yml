@@ -182,3 +182,23 @@ jobs:
             IMAGE_API="${{ secrets.IMAGE_API }}" \
             IMAGE_APP="${{ secrets.IMAGE_APP }}" \
             ./infra/prod/deploy.sh
+
+  registry-login-test:
+    runs-on: ubuntu-latest
+    needs:
+      - build-and-push
+    steps:
+      - name: Test registry login over SSH
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: '2214'
+          debug: true
+          script_stop: true
+          script: |
+            REGISTRY_HOST="${{ secrets.REGISTRY_HOST }}" \
+            REGISTRY_USERNAME="${{ secrets.REGISTRY_USERNAME }}" \
+            REGISTRY_PASSWORD="${{ secrets.REGISTRY_PASSWORD }}" \
+            bash -lc 'REGISTRY_HOST_CLEAN="${REGISTRY_HOST#http://}"; REGISTRY_HOST_CLEAN="${REGISTRY_HOST_CLEAN#https://}"; REGISTRY_HOST_CLEAN="${REGISTRY_HOST_CLEAN%%/*}"; REGISTRY_USERNAME_CLEAN="$(printf "%s" "${REGISTRY_USERNAME}" | tr -d "\r\n")"; REGISTRY_PASSWORD_CLEAN="$(printf "%s" "${REGISTRY_PASSWORD}" | tr -d "\r\n")"; echo "Login test: ${REGISTRY_HOST_CLEAN} (user: ${REGISTRY_USERNAME_CLEAN}, pass_len: ${#REGISTRY_PASSWORD_CLEAN})"; printf "%s" "${REGISTRY_PASSWORD_CLEAN}" | docker login "${REGISTRY_HOST_CLEAN}" -u "${REGISTRY_USERNAME_CLEAN}" --password-stdin'
