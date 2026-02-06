@@ -31,6 +31,10 @@ services:
     image: ${IMAGE_API:-fakebnb-api}
     env_file:
       - ./.env
+    environment:
+      RUN_MIGRATIONS: "false"
+      RUN_SEED_ON_FIRST_BOOT: "false"
+      RUN_PASSPORT_INSTALL: "false"
     command: php artisan queue:work --tries=1
     depends_on:
       api:
@@ -69,6 +73,8 @@ services:
       MAIL_FROM_ADDRESS: "hello@example.com"
       MAIL_FROM_NAME: "Fakebnb"
       RUN_MIGRATIONS: "false"
+      RUN_SEED_ON_FIRST_BOOT: "false"
+      RUN_PASSPORT_INSTALL: "false"
     command: php artisan reverb:start --host=0.0.0.0 --port=8080
     labels:
       - traefik.enable=true
