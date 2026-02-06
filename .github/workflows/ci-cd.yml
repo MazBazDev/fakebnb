@@ -1,0 +1,152 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_API: ${{ secrets.IMAGE_API }}
+  IMAGE_APP: ${{ secrets.IMAGE_APP }}
+  REGISTRY_HOST: ${{ secrets.REGISTRY_HOST }}
+
+jobs:
+  test-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          tools: composer:v2
+          extensions: bcmath, exif, gd, intl, pcntl, pdo_sqlite, sqlite3, zip
+
+      - name: Install dependencies
+        working-directory: apps/api
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Prepare test env
+        working-directory: apps/api
+        run: |
+          cp -n .env.example .env || true
+          php -r "file_exists('database/testing.sqlite') || touch('database/testing.sqlite');"
+
+      - name: Run tests
+        working-directory: apps/api
+        env:
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          APP_ENV: testing
+        run: |
+          php artisan migrate --seed --env=testing
+          php artisan test --compact
+
+  test-app:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/app
+        run: npm ci
+
+      - name: Run tests
+        working-directory: apps/app
+        env:
+          CI: "1"
+        run: npm run test:unit
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs:
+      - test-api
+      - test-app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_HOST }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Docker metadata (api)
+        id: meta_api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_API }}
+          tags: |
+            type=sha
+            type=raw,value=latest
+
+      - name: Build and push (api)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/prod/Dockerfile.api
+          push: true
+          tags: ${{ steps.meta_api.outputs.tags }}
+          labels: ${{ steps.meta_api.outputs.labels }}
+
+      - name: Docker metadata (app)
+        id: meta_app
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_APP }}
+          tags: |
+            type=sha
+            type=raw,value=latest
+
+      - name: Build and push (app)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/prod/Dockerfile.app
+          push: true
+          tags: ${{ steps.meta_app.outputs.tags }}
+          labels: ${{ steps.meta_app.outputs.labels }}
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+            VITE_REVERB_APP_KEY=${{ secrets.VITE_REVERB_APP_KEY }}
+            VITE_REVERB_HOST=${{ secrets.VITE_REVERB_HOST }}
+            VITE_REVERB_PORT=${{ secrets.VITE_REVERB_PORT }}
+            VITE_REVERB_SCHEME=${{ secrets.VITE_REVERB_SCHEME }}
+            VITE_REVERB_AUTH_ENDPOINT=${{ secrets.VITE_REVERB_AUTH_ENDPOINT }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs:
+      - build-and-push
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd "${{ secrets.VPS_PATH }}"
+            REGISTRY_HOST="${{ secrets.REGISTRY_HOST }}" \
+            REGISTRY_USERNAME="${{ secrets.REGISTRY_USERNAME }}" \
+            REGISTRY_PASSWORD="${{ secrets.REGISTRY_PASSWORD }}" \
+            IMAGE_API="${{ secrets.IMAGE_API }}" \
+            IMAGE_APP="${{ secrets.IMAGE_APP }}" \
+            ./infra/prod/deploy.sh
