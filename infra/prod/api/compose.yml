@@ -87,11 +87,17 @@ services:
 
   mailpit:
     image: axllent/mailpit:latest
-    ports:
-      - "1025:1025"
-      - "8025:8025"
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik_public
+      - traefik.http.routers.fakebnb-mailpit.rule=Host(`fakebnb-mailpit.mazbaz.fr`)
+      - traefik.http.routers.fakebnb-mailpit.entrypoints=websecure
+      - traefik.http.routers.fakebnb-mailpit.tls=true
+      - traefik.http.routers.fakebnb-mailpit.tls.certresolver=leresolver
+      - traefik.http.services.fakebnb-mailpit.loadbalancer.server.port=8025
     networks:
       - app
+      - traefik_public
 
   redis:
     image: redis:alpine
@@ -107,20 +113,6 @@ services:
       retries: 3
       timeout: 5s
 
-  mariadb:
-    image: mariadb:latest
-    environment:
-      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
-      MYSQL_DATABASE: "${MYSQL_DATABASE}"
-      MYSQL_USER: "${MYSQL_USER}"
-      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
-    ports:
-      - "3306:3306"
-    volumes:
-      - db-data:/var/lib/mysql
-    networks:
-      - app
-
 networks:
   app:
     driver: bridge
@@ -128,9 +120,6 @@ networks:
     external: true
 
 volumes:
-  db-data:
-    driver: local
-
   api-storage:
     driver: local
 
