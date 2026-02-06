@@ -172,6 +172,8 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: '2214'
+          debug: true
+          script_stop: true
           script: |
             cd "${{ secrets.VPS_PATH }}"
             REGISTRY_HOST="${{ secrets.REGISTRY_HOST }}" \
