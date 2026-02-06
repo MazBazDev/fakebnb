@@ -11,8 +11,13 @@ IMAGE_APP="${IMAGE_APP:?IMAGE_APP is required}"
 API_ENV_FILE="${API_ENV_FILE:-infra/prod/api/.env}"
 APP_ENV_FILE="${APP_ENV_FILE:-infra/prod/app/.env}"
 
-echo "Logging into registry: ${REGISTRY_HOST}"
-echo "${REGISTRY_PASSWORD}" | docker login "${REGISTRY_HOST}" -u "${REGISTRY_USERNAME}" --password-stdin
+REGISTRY_HOST_CLEAN="${REGISTRY_HOST#http://}"
+REGISTRY_HOST_CLEAN="${REGISTRY_HOST_CLEAN#https://}"
+REGISTRY_USERNAME_CLEAN="$(printf '%s' "${REGISTRY_USERNAME}" | tr -d '\r\n')"
+REGISTRY_PASSWORD_CLEAN="$(printf '%s' "${REGISTRY_PASSWORD}" | tr -d '\r\n')"
+
+echo "Logging into registry: ${REGISTRY_HOST_CLEAN} (user: ${REGISTRY_USERNAME_CLEAN})"
+printf '%s' "${REGISTRY_PASSWORD_CLEAN}" | docker login "${REGISTRY_HOST_CLEAN}" -u "${REGISTRY_USERNAME_CLEAN}" --password-stdin
 
 echo "Deploying API stack"
 IMAGE_API="${IMAGE_API}" docker compose -f infra/prod/api/compose.yml --env-file "${API_ENV_FILE}" pull
