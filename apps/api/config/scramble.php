@@ -127,10 +127,10 @@ return [
      */
     'flatten_deep_query_parameters' => true,
 
-    'middleware' => [
+    'middleware' => array_values(array_filter([
         'web',
-        RestrictedDocsAccess::class,
-    ],
+        env('SCRAMBLE_PUBLIC', true) ? null : RestrictedDocsAccess::class,
+    ])),
 
     'extensions' => [],
 ];

@@ -8,9 +8,12 @@ return [
     'allowed_origins' => [
         'http://localhost:5173',
         'http://127.0.0.1:5173',
+        'https://fakebnb.mazbaz.fr',
     ],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '/^https?:\\/\\/(.*\\.)?mazbaz\\.fr$/',
+    ],
 
     'allowed_headers' => ['*'],
 
@@ -18,5 +21,5 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 ];
