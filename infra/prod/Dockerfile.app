@@ -17,7 +17,7 @@ ENV VITE_API_URL=$VITE_API_URL \
   VITE_REVERB_AUTH_ENDPOINT=$VITE_REVERB_AUTH_ENDPOINT
 
 COPY apps/app/package*.json ./
-RUN npm ci
+RUN npm ci --no-audit --no-fund
 
 COPY apps/app ./
 RUN npm run build
