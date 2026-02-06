@@ -35,13 +35,18 @@ jobs:
         working-directory: apps/api
         run: |
           cp -n .env.example .env || true
+          echo "DB_CONNECTION=sqlite" >> .env
+          echo "DB_DATABASE=${{ github.workspace }}/apps/api/database/testing.sqlite" >> .env
           php artisan key:generate --force
+          mkdir -p database
           php -r "file_exists('database/testing.sqlite') || touch('database/testing.sqlite');"
 
       - name: Run tests
         working-directory: apps/api
         env:
           APP_ENV: testing
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ${{ github.workspace }}/apps/api/database/testing.sqlite
         run: |
           rm -f database/testing.sqlite
           php -r "touch('database/testing.sqlite');"
