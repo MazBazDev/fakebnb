@@ -25,6 +25,7 @@ services:
       - app
       - traefik_public
     volumes:
+      - api-db:/var/www/html/database
       - api-storage:/var/www/html/storage
 
   api.queue:
@@ -43,6 +44,9 @@ services:
         condition: service_healthy
     networks:
       - app
+    volumes:
+      - api-db:/var/www/html/database
+      - api-storage:/var/www/html/storage
 
   api.reverb:
     image: ${IMAGE_API:-fakebnb-api}
@@ -67,6 +71,9 @@ services:
     networks:
       - app
       - traefik_public
+    volumes:
+      - api-db:/var/www/html/database
+      - api-storage:/var/www/html/storage
 
   mailpit:
     image: axllent/mailpit:latest
@@ -103,6 +110,9 @@ networks:
     external: true
 
 volumes:
+  api-db:
+    driver: local
+
   api-storage:
     driver: local
 
