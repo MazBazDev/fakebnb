@@ -3,6 +3,9 @@ services:
     image: ${IMAGE_API:-fakebnb-api}
     env_file:
       - ./.env
+    environment:
+      RUN_MIGRATIONS: "true"
+      RUN_SEED_ON_FIRST_BOOT: "true"
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik_public

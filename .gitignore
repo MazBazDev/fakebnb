@@ -1,0 +1,7 @@
+.env
+.env.*
+infra/.env
+infra/prod/*.env
+infra/prod/**/*.env
+apps/**/.env
+apps/**/.env.*
