@@ -13,12 +13,20 @@ const { formatRelativeDate } = useDateFormat()
 const listingId = computed(() => Number(route.params.id))
 
 // Data fetching
+const defaultPayload: { listing: Listing | null; conversations: Conversation[] } = {
+  listing: null,
+  conversations: [],
+}
+
 const {
   data,
   isLoading,
   error,
   execute: load,
-} = useAsyncData<{ listing: Listing | null; conversations: Conversation[] }>(
+} = useAsyncData<
+  { listing: Listing | null; conversations: Conversation[] },
+  { listing: Listing | null; conversations: Conversation[] }
+>(
   async () => {
     const [conversationsData, listingData] = await Promise.all([
       fetchConversations(),
@@ -35,7 +43,7 @@ const {
     }
   },
   {
-    defaultValue: { listing: null, conversations: [] },
+    defaultValue: defaultPayload,
     errorMessage: 'Impossible de charger les conversations.',
   }
 )

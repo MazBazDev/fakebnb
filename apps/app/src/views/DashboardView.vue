@@ -17,7 +17,28 @@ const bookingSeries = computed(() => stats.value?.series.booking_counts ?? [])
 const payoutSeries = computed(() => stats.value?.series.payout_totals ?? [])
 
 // Stats cards configuration
-const statCards = computed(() => [
+const colorClasses = {
+  blue: { bg: 'bg-blue-50', text: 'text-blue-600' },
+  amber: { bg: 'bg-amber-50', text: 'text-amber-600' },
+  purple: { bg: 'bg-purple-50', text: 'text-purple-600' },
+  green: { bg: 'bg-green-50', text: 'text-green-600' },
+} as const
+
+type ColorKey = keyof typeof colorClasses
+type IconKey = 'home' | 'clock' | 'card' | 'currency'
+
+type StatCard = {
+  label: string
+  value: number | string
+  icon: IconKey
+  color: ColorKey
+  link?: string
+  linkText?: string
+  subtitle?: string
+  isFormatted?: boolean
+}
+
+const statCards = computed<StatCard[]>(() => [
   {
     label: 'Annonces actives',
     value: stats.value?.listings_count ?? 0,
@@ -49,13 +70,6 @@ const statCards = computed(() => [
     isFormatted: true,
   },
 ])
-
-const colorClasses: Record<string, { bg: string; text: string }> = {
-  blue: { bg: 'bg-blue-50', text: 'text-blue-600' },
-  amber: { bg: 'bg-amber-50', text: 'text-amber-600' },
-  purple: { bg: 'bg-purple-50', text: 'text-purple-600' },
-  green: { bg: 'bg-green-50', text: 'text-green-600' },
-}
 
 function listingLabel(listingId: number) {
   const listing = stats.value?.recent_requests.find((item) => item.listing_id === listingId)?.listing

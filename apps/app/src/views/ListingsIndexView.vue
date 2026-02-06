@@ -5,18 +5,20 @@ import { fetchListings, type Listing } from '@/services/listings'
 import { useAsyncData } from '@/composables'
 import { PageHeader, LoadingSpinner, EmptyState, AlertMessage } from '@/components/ui'
 
+const defaultListings: Listing[] = []
+
 const {
   data: listings,
   isLoading,
   error,
   execute: load,
-} = useAsyncData<Listing[]>(
+} = useAsyncData<Listing[], Listing[]>(
   async () => {
     const response = await fetchListings()
     return response.data
   },
   {
-    defaultValue: [],
+    defaultValue: defaultListings,
     errorMessage: 'Impossible de charger les annonces.',
   }
 )

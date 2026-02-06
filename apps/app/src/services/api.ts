@@ -27,6 +27,12 @@ type TokenUpdate = {
   expiresAt: string | null
 }
 
+type TokenResponse = {
+  access_token: string
+  refresh_token?: string | null
+  expires_in: number
+}
+
 type CacheEntry<T> = {
   data: T
   etag?: string | null
@@ -96,6 +102,15 @@ function writeCache<T>(key: string, entry: CacheEntry<T>) {
   localStorage.setItem(key, JSON.stringify(entry))
 }
 
+function isTokenResponse(data: unknown): data is TokenResponse {
+  if (!data || typeof data !== 'object') return false
+  const payload = data as Record<string, unknown>
+  return (
+    typeof payload.access_token === 'string' &&
+    typeof payload.expires_in === 'number'
+  )
+}
+
 async function refreshAccessToken(): Promise<string | null> {
   if (refreshPromise) {
     return refreshPromise
@@ -136,7 +151,7 @@ async function refreshAccessToken(): Promise<string | null> {
       }
     }
 
-    if (!response.ok || !data?.access_token) {
+    if (!response.ok || !isTokenResponse(data)) {
       persistTokens({ accessToken: null, refreshToken: null, expiresAt: null })
       return null
     }
@@ -148,7 +163,7 @@ async function refreshAccessToken(): Promise<string | null> {
       expiresAt,
     })
 
-    return data.access_token as string
+    return data.access_token
   })()
 
   try {

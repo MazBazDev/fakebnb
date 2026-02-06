@@ -7,7 +7,7 @@ interface Props {
   /** Subtitle/description */
   subtitle?: string
   /** Icon name (slot can also be used for custom icons) */
-  icon?: 'messages' | 'bookings' | 'listings' | 'search' | 'users' | 'default'
+  icon?: 'messages' | 'bookings' | 'calendar' | 'listings' | 'search' | 'users' | 'notFound' | 'default'
   /** Action button text */
   actionText?: string
   /** Action button route (for RouterLink) */
@@ -55,7 +55,7 @@ defineEmits<{
 
         <!-- Bookings/Calendar icon -->
         <svg
-          v-else-if="icon === 'bookings'"
+          v-else-if="icon === 'bookings' || icon === 'calendar'"
           class="h-10 w-10 text-gray-400"
           fill="none"
           stroke="currentColor"
