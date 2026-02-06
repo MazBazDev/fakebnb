@@ -38,6 +38,7 @@ jobs:
           echo "DB_CONNECTION=sqlite" >> .env
           echo "DB_DATABASE=${{ github.workspace }}/apps/api/database/testing.sqlite" >> .env
           php artisan key:generate --force
+          php artisan passport:keys --force || true
           mkdir -p database
           php -r "file_exists('database/testing.sqlite') || touch('database/testing.sqlite');"
 
