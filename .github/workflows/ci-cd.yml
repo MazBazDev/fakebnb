@@ -134,6 +134,9 @@ jobs:
           build-args: |
             VITE_API_URL=${{ secrets.VITE_API_URL }}
             VITE_OAUTH_CLIENT_ID=${{ secrets.VITE_OAUTH_CLIENT_ID }}
+            VITE_OAUTH_AUTHORIZE_URL=${{ secrets.VITE_OAUTH_AUTHORIZE_URL }}
+            VITE_OAUTH_TOKEN_URL=${{ secrets.VITE_OAUTH_TOKEN_URL }}
+            VITE_OAUTH_REDIRECT_URI=${{ secrets.VITE_OAUTH_REDIRECT_URI }}
             VITE_REVERB_APP_KEY=${{ secrets.VITE_REVERB_APP_KEY }}
             VITE_REVERB_HOST=${{ secrets.VITE_REVERB_HOST }}
             VITE_REVERB_PORT=${{ secrets.VITE_REVERB_PORT }}
