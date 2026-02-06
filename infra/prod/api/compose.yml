@@ -1,0 +1,135 @@
+services:
+  api:
+    image: ${IMAGE_API:-fakebnb-api}
+    env_file:
+      - ./.env
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik_public
+      - traefik.http.routers.fakebnb-api.rule=Host(`fakebnb-api.mazbaz.fr`)
+      - traefik.http.routers.fakebnb-api.entrypoints=websecure
+      - traefik.http.routers.fakebnb-api.tls=true
+      - traefik.http.routers.fakebnb-api.tls.certresolver=leresolver
+      - traefik.http.services.fakebnb-api.loadbalancer.server.port=80
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost/api/v1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    depends_on:
+      - redis
+    networks:
+      - app
+      - traefik_public
+    volumes:
+      - api-storage:/var/www/html/storage
+
+  api.queue:
+    image: ${IMAGE_API:-fakebnb-api}
+    env_file:
+      - ./.env
+    command: php artisan queue:work --tries=1
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app
+
+  api.reverb:
+    image: ${IMAGE_API:-fakebnb-api}
+    env_file:
+      - ./.env
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: "${APP_URL:-http://localhost:8989}"
+      APP_KEY: "${APP_KEY}"
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /var/www/html/database/database.sqlite
+      SESSION_DRIVER: file
+      CACHE_STORE: file
+      QUEUE_CONNECTION: database
+      BROADCAST_CONNECTION: reverb
+      REVERB_APP_ID: "${REVERB_APP_ID:-local}"
+      REVERB_APP_KEY: "${REVERB_APP_KEY:-local}"
+      REVERB_APP_SECRET: "${REVERB_APP_SECRET:-local}"
+      REVERB_HOST: "${REVERB_HOST:-localhost}"
+      REVERB_PORT: "${REVERB_PORT:-8080}"
+      REVERB_SCHEME: "${REVERB_SCHEME:-http}"
+      REVERB_SERVER_HOST: 0.0.0.0
+      REVERB_SERVER_PORT: 8080
+      MAIL_MAILER: smtp
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_FROM_ADDRESS: "hello@example.com"
+      MAIL_FROM_NAME: "Fakebnb"
+      RUN_MIGRATIONS: "false"
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik_public
+      - traefik.http.routers.fakebnb-reverb.rule=Host(`fakebnb-reverb.mazbaz.fr`)
+      - traefik.http.routers.fakebnb-reverb.entrypoints=websecure
+      - traefik.http.routers.fakebnb-reverb.tls=true
+      - traefik.http.routers.fakebnb-reverb.tls.certresolver=leresolver
+      - traefik.http.services.fakebnb-reverb.loadbalancer.server.port=8080
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - app
+      - traefik_public
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - app
+
+  redis:
+    image: redis:alpine
+    volumes:
+      - fakebnb-redis:/data
+    networks:
+      - app
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      retries: 3
+      timeout: 5s
+
+  mariadb:
+    image: mariadb:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+    ports:
+      - "3306:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - app
+
+networks:
+  app:
+    driver: bridge
+  traefik_public:
+    external: true
+
+volumes:
+  db-data:
+    driver: local
+
+  api-storage:
+    driver: local
+
+  fakebnb-redis:
+    driver: local

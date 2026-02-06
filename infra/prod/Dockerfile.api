@@ -22,8 +22,8 @@ COPY apps/api/composer.json apps/api/composer.lock ./
 COPY apps/api ./
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
-COPY infra/Caddyfile /etc/caddy/Caddyfile
-COPY infra/api-entrypoint.sh /usr/local/bin/api-entrypoint
+COPY infra/prod/Caddyfile /etc/caddy/Caddyfile
+COPY infra/prod/api-entrypoint.sh /usr/local/bin/api-entrypoint
 RUN chmod +x /usr/local/bin/api-entrypoint
 
 EXPOSE 80
