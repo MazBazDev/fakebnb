@@ -18,6 +18,6 @@ describe('App', () => {
     router.push('/')
     await router.isReady()
 
-    expect(wrapper.text()).toContain('MiniBnB')
+    expect(wrapper.text()).toContain('Fakebnb')
   })
 })
