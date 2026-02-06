@@ -19,10 +19,11 @@ RUN install-php-extensions \
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 COPY apps/api/composer.json apps/api/composer.lock ./
-RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --prefer-dist --no-progress --classmap-authoritative
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --prefer-dist --no-progress --no-scripts --classmap-authoritative
 
 COPY apps/api ./
-RUN COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload --no-dev --classmap-authoritative
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload --no-dev --classmap-authoritative \
+  && php artisan package:discover --ansi
 
 FROM dunglas/frankenphp:1.3-php8.4
 
