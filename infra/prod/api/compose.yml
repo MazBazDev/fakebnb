@@ -68,6 +68,8 @@ services:
       - traefik.http.routers.fakebnb-reverb.entrypoints=websecure
       - traefik.http.routers.fakebnb-reverb.tls=true
       - traefik.http.routers.fakebnb-reverb.tls.certresolver=leresolver
+      - traefik.http.routers.fakebnb-reverb.service=fakebnb-reverb
+      - traefik.http.routers.fakebnb-reverb.priority=100
       - traefik.http.services.fakebnb-reverb.loadbalancer.server.port=8080
     depends_on:
       api:
