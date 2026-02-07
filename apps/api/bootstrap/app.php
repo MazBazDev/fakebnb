@@ -17,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         if ('production' === config('app.env')) {
             $middleware->trustProxies(
                 at: ['*'],
-                headers: Request::HEADER_X_FORWARDED_TRAEFIK
+                headers: Request::HEADER_X_FORWARDED_ALL
             );
         }
 
