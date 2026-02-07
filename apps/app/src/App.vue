@@ -17,7 +17,6 @@ const isHostRoute = computed(() => route.meta.layout === 'host')
 const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 const sidebarOpen = ref(false)
-let notificationInterval: number | null = null
 const isLoggingOut = ref(false)
 const apiOrigin = computed(() => {
   const apiBase = import.meta.env.VITE_API_URL ?? '/api/v1'
@@ -90,31 +89,18 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
-  if (notificationInterval) {
-    window.clearInterval(notificationInterval)
-    notificationInterval = null
-  }
 })
 
 watch(
   () => auth.user?.id,
   (userId) => {
     if (!userId) {
-      if (notificationInterval) {
-        window.clearInterval(notificationInterval)
-        notificationInterval = null
-      }
       notifications.clear()
       return
     }
     notifications.bindToUser(userId)
     notifications.refreshUnreadCount()
     notifications.hydrate()
-    if (!notificationInterval) {
-      notificationInterval = window.setInterval(() => {
-        notifications.refreshUnreadCount()
-      }, 20000)
-    }
   },
   { immediate: true }
 )
