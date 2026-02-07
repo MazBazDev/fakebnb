@@ -5,3 +5,4 @@ infra/prod/*.env
 infra/prod/**/*.env
 apps/**/.env
 apps/**/.env.*
+ssh/
