@@ -338,9 +338,6 @@ async function contactHost() {
             Voir mes réservations ({{ myActiveBookings.length }})
           </RouterLink>
         </div>
-        <h1 class="text-4xl font-semibold text-slate-900 md:text-5xl">{{ listing.title }}</h1>
-        <p class="text-sm text-slate-500">{{ listing.address }}</p>
-
         <div v-if="listing.host" class="flex items-center gap-3">
           <span
             class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-sm font-semibold text-slate-700"
