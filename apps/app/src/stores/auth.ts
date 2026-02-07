@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { apiFetch, ApiError, setAuthTokenUpdater } from '@/services/api'
+import { setEchoAuthToken } from '@/services/echo'
 
 export type User = {
   id: number
@@ -29,6 +30,8 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = nextToken
     refreshToken.value = nextRefreshToken
     expiresAt.value = nextExpiresAt
+
+    setEchoAuthToken(nextToken)
 
     if (nextToken) {
       localStorage.setItem(ACCESS_TOKEN_KEY, nextToken)

@@ -111,12 +111,6 @@ export const useNotificationsStore = defineStore('notifications', () => {
       .notification((notification: RawNotification) => {
         receive(notification)
       })
-      .listen(
-        '.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated',
-        (notification: RawNotification) => {
-          receive(notification)
-        }
-      )
   }
 
   function clear() {
