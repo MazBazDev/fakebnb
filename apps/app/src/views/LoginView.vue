@@ -1,12 +1,31 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { startOAuthFlow } from '@/services/oauth'
+import { apiFetch } from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 import { PageHeader, AlertMessage } from '@/components/ui'
 
 const route = useRoute()
+const router = useRouter()
+const auth = useAuthStore()
 const error = ref<string | null>(null)
 const isLoading = ref(false)
+const isQuickLoading = ref<string | null>(null)
+const showQuickLogin = true
+
+type DevLoginResponse = {
+  access_token: string
+  refresh_token?: string | null
+  expires_in?: number
+  user: {
+    id: number
+    name: string
+    email: string
+    address?: string | null
+    profile_photo_url?: string | null
+  }
+}
 
 async function submit() {
   error.value = null
@@ -18,6 +37,31 @@ async function submit() {
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Connexion impossible.'
     isLoading.value = false
+  }
+}
+
+async function quickLogin(role: 'client' | 'host' | 'cohost') {
+  error.value = null
+  isQuickLoading.value = role
+
+  try {
+    const response = await apiFetch<DevLoginResponse>('/auth/dev-login', {
+      method: 'POST',
+      body: JSON.stringify({ role }),
+    })
+
+    const expiresAt = response.expires_in
+      ? new Date(Date.now() + response.expires_in * 1000).toISOString()
+      : null
+
+    auth.setSession(response.access_token, response.refresh_token ?? null, expiresAt, response.user)
+
+    const redirect = (route.query.redirect as string | undefined) ?? '/listings'
+    await router.push(redirect)
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Connexion impossible.'
+  } finally {
+    isQuickLoading.value = null
   }
 }
 </script>
@@ -32,6 +76,39 @@ async function submit() {
 
     <div class="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
       <AlertMessage v-if="error" :message="error" type="error" class="mb-6" />
+
+      <div v-if="showQuickLogin" class="mb-6 space-y-3">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
+          Se connecter en tant que
+        </p>
+        <div class="grid gap-3 sm:grid-cols-3">
+          <button
+            type="button"
+            class="rounded-lg border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 transition hover:border-[#FF385C] hover:text-[#FF385C] disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="isQuickLoading !== null"
+            @click="quickLogin('client')"
+          >
+            {{ isQuickLoading === 'client' ? 'Connexion...' : 'Client' }}
+          </button>
+          <button
+            type="button"
+            class="rounded-lg border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 transition hover:border-[#FF385C] hover:text-[#FF385C] disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="isQuickLoading !== null"
+            @click="quickLogin('host')"
+          >
+            {{ isQuickLoading === 'host' ? 'Connexion...' : 'Host' }}
+          </button>
+          <button
+            type="button"
+            class="rounded-lg border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 transition hover:border-[#FF385C] hover:text-[#FF385C] disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="isQuickLoading !== null"
+            @click="quickLogin('cohost')"
+          >
+            {{ isQuickLoading === 'cohost' ? 'Connexion...' : 'Co-host' }}
+          </button>
+        </div>
+        <div class="border-t border-gray-100 pt-4"></div>
+      </div>
 
       <button
         class="w-full rounded-lg bg-gradient-to-r from-[#E61E4D] to-[#D70466] px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"

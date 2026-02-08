@@ -30,6 +30,7 @@ Route::prefix('v1')->group(function () {
         ->middleware('auth.api.optional');
 
     Route::post('/auth/register', [AuthController::class, 'register']);
+    Route::post('/auth/dev-login', [AuthController::class, 'devLogin']);
 
     Route::middleware('auth:api')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
