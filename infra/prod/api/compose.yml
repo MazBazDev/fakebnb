@@ -50,6 +50,28 @@ services:
       - api-db:/var/www/html/database
       - api-storage:/var/www/html/storage
 
+  api.scheduler:
+    image: ${IMAGE_API:-fakebnb-api}
+    env_file:
+      - ./.env
+    environment:
+      RUN_MIGRATIONS: "false"
+      RUN_SEED_ON_FIRST_BOOT: "false"
+      RUN_PASSPORT_INSTALL: "false"
+    command: php artisan schedule:work
+    healthcheck:
+      disable: true
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app
+    volumes:
+      - api-db:/var/www/html/database
+      - api-storage:/var/www/html/storage
+
   api.reverb:
     image: ${IMAGE_API:-fakebnb-api}
     env_file:
