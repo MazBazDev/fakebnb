@@ -84,6 +84,49 @@
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
         button:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(255, 56, 92, 0.28); }
+        .quick-login {
+            margin-bottom: 20px;
+            display: grid;
+            gap: 10px;
+        }
+        .quick-login-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: #9ca3af;
+        }
+        .quick-login-grid {
+            display: grid;
+            gap: 10px;
+        }
+        @media (min-width: 560px) {
+            .quick-login-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+        .quick-btn {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            background: #ffffff;
+            font-weight: 600;
+            font-size: 13px;
+            color: #1f2937;
+            cursor: pointer;
+            transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .quick-btn:hover {
+            border-color: #ff385c;
+            color: #ff385c;
+            box-shadow: 0 8px 16px rgba(255, 56, 92, 0.12);
+        }
+        .divider {
+            height: 1px;
+            background: #f3f4f6;
+            margin: 16px 0;
+        }
         .error {
             background: #fee2e2;
             color: #b91c1c;
@@ -115,6 +158,31 @@
         @if ($errors->any())
             <div class="error">{{ $errors->first() }}</div>
         @endif
+
+            <div class="quick-login">
+                <div class="quick-login-title">Se connecter en tant que</div>
+                <div class="quick-login-grid">
+                    <form method="POST" action="{{ route('login.store') }}">
+                        @csrf
+                        <input type="hidden" name="email" value="tc@t.fr" />
+                        <input type="hidden" name="password" value="password" />
+                        <button class="quick-btn" type="submit">Client</button>
+                    </form>
+                    <form method="POST" action="{{ route('login.store') }}">
+                        @csrf
+                        <input type="hidden" name="email" value="th@t.fr" />
+                        <input type="hidden" name="password" value="password" />
+                        <button class="quick-btn" type="submit">Host</button>
+                    </form>
+                    <form method="POST" action="{{ route('login.store') }}">
+                        @csrf
+                        <input type="hidden" name="email" value="tch@t.fr" />
+                        <input type="hidden" name="password" value="password" />
+                        <button class="quick-btn" type="submit">Co-host</button>
+                    </form>
+                </div>
+                <div class="divider"></div>
+            </div>
 
             <form method="POST" action="{{ route('login.store') }}">
                 @csrf
