@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { cancelBooking, fetchBooking, type Booking } from '@/services/bookings'
 import { createConversationForBooking } from '@/services/conversations'
+import { createReview } from '@/services/reviews'
 import { useAuthStore } from '@/stores/auth'
 import { useBookingStatus, useDateFormat } from '@/composables'
 import { AlertMessage, LoadingSpinner, PageHeader, StatusBadge } from '@/components/ui'
@@ -18,11 +19,26 @@ const isLoading = ref(false)
 const error = ref<string | null>(null)
 const cancelError = ref<string | null>(null)
 const contactError = ref<string | null>(null)
+const reviewError = ref<string | null>(null)
 const isCancelling = ref(false)
+const isSubmittingReview = ref(false)
+const reviewRating = ref(0)
+const reviewComment = ref('')
 
 const bookingId = computed(() => Number(route.params.id))
 const listing = computed(() => booking.value?.listing ?? null)
 const heroImage = computed(() => listing.value?.images?.[0]?.url ?? null)
+const existingReview = computed(() => booking.value?.review ?? null)
+
+const canReview = computed(() => {
+  if (!booking.value) return false
+  if (existingReview.value) return false
+  if (!['confirmed', 'completed'].includes(booking.value.status)) return false
+  const end = new Date(booking.value.end_date)
+  const today = new Date()
+  const todayValue = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
+  return end < todayValue
+})
 
 const breadcrumbs = computed(() => [
   { label: 'Accueil', to: '/' },
@@ -33,6 +49,35 @@ const breadcrumbs = computed(() => [
 function formatAmount(value?: number | null) {
   if (value == null) return '—'
   return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
+}
+
+function setRating(value: number) {
+  reviewRating.value = value
+}
+
+async function submitReview() {
+  if (!booking.value || isSubmittingReview.value) return
+  if (reviewRating.value < 1 || reviewComment.value.trim().length === 0) {
+    reviewError.value = 'Veuillez laisser une note et un commentaire.'
+    return
+  }
+
+  isSubmittingReview.value = true
+  reviewError.value = null
+
+  try {
+    const review = await createReview(booking.value.id, {
+      rating: reviewRating.value,
+      comment: reviewComment.value.trim(),
+    })
+    booking.value = { ...booking.value, review }
+    reviewRating.value = 0
+    reviewComment.value = ''
+  } catch (err) {
+    reviewError.value = err instanceof Error ? err.message : 'Impossible de publier votre avis.'
+  } finally {
+    isSubmittingReview.value = false
+  }
 }
 
 async function load() {
@@ -197,6 +242,66 @@ onMounted(load)
             </div>
           </div>
         </div>
+      </div>
+
+      <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div class="mb-4 flex items-start justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-[#222222]">Votre avis</h2>
+            <p class="text-sm text-gray-600">Partagez votre expérience sur cette annonce.</p>
+          </div>
+          <StatusBadge :status="booking.status" />
+        </div>
+
+        <AlertMessage :message="reviewError" type="error" />
+
+        <div v-if="existingReview" class="space-y-4">
+          <div class="flex items-center gap-2 text-rose-600">
+            <span v-for="star in 5" :key="star" class="text-lg">
+              {{ star <= existingReview.rating ? '★' : '☆' }}
+            </span>
+          </div>
+          <p class="text-sm text-gray-700">{{ existingReview.comment }}</p>
+
+          <div v-if="existingReview.reply_body" class="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-700">
+            <p class="font-semibold text-gray-800">Réponse de l'hôte</p>
+            <p class="mt-1">{{ existingReview.reply_body }}</p>
+          </div>
+        </div>
+
+        <form v-else-if="canReview" class="space-y-4" @submit.prevent="submitReview">
+          <div class="flex items-center gap-2 text-rose-600">
+            <button
+              v-for="star in 5"
+              :key="star"
+              type="button"
+              class="text-2xl transition hover:scale-105"
+              :class="star <= reviewRating ? 'text-rose-500' : 'text-gray-300'"
+              @click="setRating(star)"
+            >
+              ★
+            </button>
+          </div>
+
+          <textarea
+            v-model="reviewComment"
+            rows="4"
+            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-100"
+            placeholder="Racontez votre séjour..."
+          ></textarea>
+
+          <button
+            type="submit"
+            class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#E61E4D] to-[#D70466] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="isSubmittingReview"
+          >
+            {{ isSubmittingReview ? 'Publication...' : 'Publier mon avis' }}
+          </button>
+        </form>
+
+        <p v-else class="text-sm text-gray-500">
+          Vous pourrez laisser un avis une fois la réservation terminée.
+        </p>
       </div>
 
       <RouterLink

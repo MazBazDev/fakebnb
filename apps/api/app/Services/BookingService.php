@@ -40,7 +40,7 @@ class BookingService
 
     public function findForUser(User $user, Booking $booking): Booking
     {
-        return $booking->load(['listing.images', 'guest', 'payment']);
+        return $booking->load(['listing.images', 'guest', 'payment', 'review.repliedBy', 'review.guest']);
     }
 
     public function listConfirmedForListing(Listing $listing)

@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\ReviewResource;
 
 class BookingResource extends JsonResource
 {
@@ -52,6 +53,9 @@ class BookingResource extends JsonResource
                     'commission_amount' => $this->payment->commission_amount,
                     'payout_amount' => $this->payment->payout_amount,
                 ];
+            }),
+            'review' => $this->whenLoaded('review', function () {
+                return ReviewResource::make($this->review);
             }),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

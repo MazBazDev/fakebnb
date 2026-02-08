@@ -1,4 +1,5 @@
 import { apiFetch } from '@/services/api'
+import type { Review } from '@/services/reviews'
 
 export type Booking = {
   id: number
@@ -34,6 +35,7 @@ export type Booking = {
     commission_amount: number
     payout_amount: number
   } | null
+  review?: Review | null
   created_at?: string | null
 }
 

@@ -4,6 +4,7 @@ import { useRoute, RouterLink, useRouter } from 'vue-router'
 import { fetchListing, type Listing } from '@/services/listings'
 import { createBooking, fetchActiveBookingCount, fetchListingBookings, type Booking } from '@/services/bookings'
 import { createConversation } from '@/services/conversations'
+import { fetchListingReviews, type Review } from '@/services/reviews'
 import { useAuthStore } from '@/stores/auth'
 import { getAmenityLabel } from '@/constants/amenities'
 import { PageHeader, LoadingSpinner, AlertMessage } from '@/components/ui'
@@ -24,6 +25,8 @@ const blockedDates = ref<Set<string>>(new Set())
 const myActiveBookingsCount = ref(0)
 const lightboxOpen = ref(false)
 const lightboxImage = ref<string | null>(null)
+const reviews = ref<Review[]>([])
+const reviewsMeta = ref<{ total: number } | null>(null)
 const bookingForm = ref({
   start_date: '',
   end_date: '',
@@ -38,6 +41,14 @@ function formatDate(date: Date) {
 const monthLabel = computed(() =>
   activeMonth.value.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
 )
+
+const reviewsAverage = computed(() => {
+  if (reviews.value.length === 0) return 0
+  const total = reviews.value.reduce((sum, review) => sum + review.rating, 0)
+  return Math.round((total / reviews.value.length) * 10) / 10
+})
+
+const reviewsCount = computed(() => reviewsMeta.value?.total ?? reviews.value.length)
 
 const calendarDays = computed(() => {
   const year = activeMonth.value.getUTCFullYear()
@@ -194,8 +205,14 @@ async function load() {
 
   try {
     const id = Number(route.params.id)
-    listing.value = await fetchListing(id)
-    const confirmed = await fetchListingBookings(id)
+    const [listingData, confirmed, reviewsResponse] = await Promise.all([
+      fetchListing(id),
+      fetchListingBookings(id),
+      fetchListingReviews(id, 20),
+    ])
+    listing.value = listingData
+    reviews.value = reviewsResponse.data
+    reviewsMeta.value = reviewsResponse.meta ? { total: reviewsResponse.meta.total } : null
     await loadActiveBookings()
     blockedDates.value = new Set(
       confirmed.flatMap((booking) => {
@@ -409,6 +426,17 @@ async function contactHost() {
               </span>
             </div>
 
+            <div class="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-600">
+              <div class="flex items-center gap-1 text-rose-600">
+                <span v-for="star in 5" :key="star" class="text-base">
+                  {{ star <= Math.round(reviewsAverage) ? '★' : '☆' }}
+                </span>
+              </div>
+              <span>{{ reviewsAverage }} / 5</span>
+              <span class="text-slate-400">•</span>
+              <span>{{ reviewsCount }} avis</span>
+            </div>
+
             <div
               v-if="bookingStatus"
               class="mt-4 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold"
@@ -460,6 +488,48 @@ async function contactHost() {
               </button>
               <p v-else class="text-xs text-slate-500">Vous gérez cette annonce.</p>
               <p v-if="messageError" class="text-xs text-rose-600">{{ messageError }}</p>
+            </div>
+          </div>
+
+          <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-lg font-semibold text-slate-900">Avis</h2>
+              <span class="text-xs font-semibold text-slate-500">{{ reviewsCount }} avis</span>
+            </div>
+
+            <div v-if="reviews.length === 0" class="text-sm text-slate-500">
+              Aucun avis pour le moment.
+            </div>
+
+            <div v-else class="space-y-4">
+              <article
+                v-for="review in reviews"
+                :key="review.id"
+                class="rounded-2xl border border-slate-100 bg-slate-50 p-4"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-semibold text-slate-700">
+                      {{ review.guest?.name ?? `Voyageur #${review.guest_user_id}` }}
+                    </span>
+                    <span class="text-xs text-slate-400">•</span>
+                    <span class="text-xs text-slate-400">{{ review.created_at?.slice(0, 10) }}</span>
+                  </div>
+                  <div class="flex items-center gap-1 text-rose-600">
+                    <span v-for="star in 5" :key="star" class="text-sm">
+                      {{ star <= review.rating ? '★' : '☆' }}
+                    </span>
+                  </div>
+                </div>
+                <p class="mt-3 text-sm text-slate-600">{{ review.comment }}</p>
+                <div
+                  v-if="review.reply_body"
+                  class="mt-4 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600"
+                >
+                  <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Réponse de l'hôte</p>
+                  <p class="mt-2">{{ review.reply_body }}</p>
+                </div>
+              </article>
             </div>
           </div>
         </div>
