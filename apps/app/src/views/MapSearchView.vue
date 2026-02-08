@@ -106,7 +106,28 @@ onMounted(() => {
   if (!mapContainer.value) return
   const mapOptions: MapOptions = {
     container: mapContainer.value,
-    style: 'https://demotiles.maplibre.org/style.json',
+    style: {
+      version: 8,
+      sources: {
+        osm: {
+          type: 'raster',
+          tiles: [
+            'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          ],
+          tileSize: 256,
+          attribution: '&copy; OpenStreetMap contributors',
+        },
+      },
+      layers: [
+        {
+          id: 'osm',
+          type: 'raster',
+          source: 'osm',
+        },
+      ],
+    },
     center: [2.3522, 48.8566],
     zoom: 5,
     maxZoom: 18,
