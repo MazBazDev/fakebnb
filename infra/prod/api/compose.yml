@@ -25,7 +25,6 @@ services:
       - app
       - traefik_public
     volumes:
-      - api-db:/var/www/html/database
       - api-storage:/var/www/html/storage
 
   api.queue:
@@ -47,7 +46,6 @@ services:
     networks:
       - app
     volumes:
-      - api-db:/var/www/html/database
       - api-storage:/var/www/html/storage
 
   api.scheduler:
@@ -69,7 +67,6 @@ services:
     networks:
       - app
     volumes:
-      - api-db:/var/www/html/database
       - api-storage:/var/www/html/storage
 
   api.reverb:
@@ -100,7 +97,6 @@ services:
       - app
       - traefik_public
     volumes:
-      - api-db:/var/www/html/database
       - api-storage:/var/www/html/storage
 
   mailpit:
@@ -138,9 +134,6 @@ networks:
     external: true
 
 volumes:
-  api-db:
-    driver: local
-
   api-storage:
     driver: local
 
