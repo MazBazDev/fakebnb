@@ -18,7 +18,25 @@ class ListingService
 
     public function listPublic(array $filters = [], int $perPage = 12)
     {
-        $query = Listing::query()->with('images')->latest();
+        $query = Listing::query()
+            ->select([
+                'id',
+                'title',
+                'description',
+                'city',
+                'latitude',
+                'longitude',
+                'guest_capacity',
+                'price_per_night',
+            ])
+            ->with([
+                'images' => function ($builder) {
+                    $builder
+                        ->select(['id', 'listing_id', 'path', 'position'])
+                        ->orderBy('position');
+                },
+            ])
+            ->latest();
 
         if (! empty($filters['search'])) {
             $term = $filters['search'];
@@ -63,6 +81,21 @@ class ListingService
         }
 
         return $query->paginate($perPage);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function listPublicCities(): array
+    {
+        return Listing::query()
+            ->whereNotNull('city')
+            ->distinct()
+            ->orderBy('city')
+            ->pluck('city')
+            ->filter()
+            ->values()
+            ->all();
     }
 
     private function parseBounds(string $bounds): ?array

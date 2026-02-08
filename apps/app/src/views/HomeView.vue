@@ -44,13 +44,8 @@ async function load() {
     })
     listings.value = response.data
 
-    // Toujours charger toutes les villes disponibles pour le sélecteur
     if (allCities.value.length === 0) {
-      const allListingsResponse = await fetchListings({
-        per_page: 1000 // Charger toutes les annonces pour extraire les villes
-      })
-      const unique = new Set(allListingsResponse.data.map((listing) => listing.city).filter(Boolean))
-      allCities.value = Array.from(unique).sort()
+      allCities.value = response.meta?.cities ?? []
     }
 
     total.value = response.meta?.total ?? response.data.length

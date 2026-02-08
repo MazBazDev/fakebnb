@@ -7,6 +7,7 @@ use App\Http\Requests\Listing\StoreListingRequest;
 use App\Http\Requests\Listing\UpdateListingRequest;
 use App\Http\Resources\BookingResource;
 use App\Http\Resources\ListingResource;
+use App\Http\Resources\ListingSummaryResource;
 use App\Models\Listing;
 use App\Services\BookingService;
 use App\Services\ListingService;
@@ -37,10 +38,17 @@ class ListingController extends Controller
             $filters,
             $perPage
         ) {
-            $resource = ListingResource::collection($listingService->listPublic($filters, $perPage));
+            $resource = ListingSummaryResource::collection($listingService->listPublic($filters, $perPage));
 
             return $resource->response()->getData(true);
         });
+        $cities = Cache::remember(
+            $this->listingsCitiesCacheKey(),
+            self::LISTINGS_CACHE_TTL,
+            fn () => $listingService->listPublicCities()
+        );
+        $payload['meta'] ??= [];
+        $payload['meta']['cities'] = $cities;
         $response = response()->json($payload);
 
         return $this->withCacheHeaders($request, $response, $payload, true);
@@ -141,5 +149,12 @@ class ListingController extends Controller
         ]));
 
         return "listings:index:v{$version}:{$signature}";
+    }
+
+    private function listingsCitiesCacheKey(): string
+    {
+        $version = (int) Cache::get('listings:index:version', 1);
+
+        return "listings:cities:v{$version}";
     }
 }
