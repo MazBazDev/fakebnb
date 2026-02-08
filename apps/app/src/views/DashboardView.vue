@@ -1,20 +1,98 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { PageHeader, LoadingSpinner, EmptyState, AlertMessage } from '@/components/ui'
 import { useAuthStore } from '@/stores/auth'
 import { fetchHostStats, type HostStats } from '@/services/hostStats'
+import { fetchBookings, type Booking } from '@/services/bookings'
 
 const auth = useAuthStore()
+const router = useRouter()
 const displayName = computed(() => auth.user?.name ?? auth.user?.email ?? 'Utilisateur')
 const stats = ref<HostStats | null>(null)
+const bookings = ref<Booking[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
+const calendarMonth = ref(new Date())
 
 const upcomingArrivals = computed(() => stats.value?.upcoming_arrivals ?? [])
 const recentBookings = computed(() => stats.value?.recent_requests ?? [])
 const bookingSeries = computed(() => stats.value?.series.booking_counts ?? [])
 const payoutSeries = computed(() => stats.value?.series.payout_totals ?? [])
+
+const calendarLabel = computed(() =>
+  calendarMonth.value.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+)
+
+const calendarDays = computed(() => {
+  const monthStart = new Date(Date.UTC(calendarMonth.value.getUTCFullYear(), calendarMonth.value.getUTCMonth(), 1))
+  const monthEnd = new Date(Date.UTC(calendarMonth.value.getUTCFullYear(), calendarMonth.value.getUTCMonth() + 1, 0))
+  const firstWeekday = (monthStart.getUTCDay() + 6) % 7
+  const totalDays = monthEnd.getUTCDate()
+
+  const days: Array<{ date: Date | null; iso: string | null }> = []
+  for (let i = 0; i < firstWeekday; i += 1) {
+    days.push({ date: null, iso: null })
+  }
+  for (let day = 1; day <= totalDays; day += 1) {
+    const date = new Date(Date.UTC(calendarMonth.value.getUTCFullYear(), calendarMonth.value.getUTCMonth(), day))
+    days.push({ date, iso: date.toISOString().slice(0, 10) })
+  }
+  while (days.length % 7 !== 0) {
+    days.push({ date: null, iso: null })
+  }
+  return days
+})
+
+const bookingDays = computed(() => {
+  const set = new Set<string>()
+  const monthStart = new Date(Date.UTC(calendarMonth.value.getUTCFullYear(), calendarMonth.value.getUTCMonth(), 1))
+  const monthEnd = new Date(Date.UTC(calendarMonth.value.getUTCFullYear(), calendarMonth.value.getUTCMonth() + 1, 0))
+
+  bookings.value
+    .filter((booking) => ['confirmed', 'awaiting_payment'].includes(booking.status))
+    .forEach((booking) => {
+      const start = new Date(booking.start_date)
+      const end = new Date(booking.end_date)
+      const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()))
+      const endDate = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()))
+
+      while (cursor < endDate) {
+        if (cursor >= monthStart && cursor <= monthEnd) {
+          set.add(cursor.toISOString().slice(0, 10))
+        }
+        cursor.setUTCDate(cursor.getUTCDate() + 1)
+      }
+    })
+
+  return set
+})
+
+const bookingsByDay = computed(() => {
+  const map = new Map<string, Booking[]>()
+  const monthStart = new Date(Date.UTC(calendarMonth.value.getUTCFullYear(), calendarMonth.value.getUTCMonth(), 1))
+  const monthEnd = new Date(Date.UTC(calendarMonth.value.getUTCFullYear(), calendarMonth.value.getUTCMonth() + 1, 0))
+
+  bookings.value
+    .filter((booking) => ['confirmed', 'awaiting_payment'].includes(booking.status))
+    .forEach((booking) => {
+      const start = new Date(booking.start_date)
+      const end = new Date(booking.end_date)
+      const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()))
+      const endDate = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()))
+
+      while (cursor < endDate) {
+        if (cursor >= monthStart && cursor <= monthEnd) {
+          const iso = cursor.toISOString().slice(0, 10)
+          const existing = map.get(iso) ?? []
+          map.set(iso, [...existing, booking])
+        }
+        cursor.setUTCDate(cursor.getUTCDate() + 1)
+      }
+    })
+
+  return map
+})
 
 // Stats cards configuration
 const colorClasses = {
@@ -104,12 +182,33 @@ async function loadDashboard() {
   error.value = null
 
   try {
-    stats.value = await fetchHostStats()
+    const [statsData, bookingsData] = await Promise.all([
+      fetchHostStats(),
+      fetchBookings(),
+    ])
+    stats.value = statsData
+    bookings.value = bookingsData
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Impossible de charger les statistiques.'
   } finally {
     isLoading.value = false
   }
+}
+
+function prevMonth() {
+  const next = new Date(calendarMonth.value)
+  next.setUTCMonth(next.getUTCMonth() - 1)
+  calendarMonth.value = next
+}
+
+function nextMonth() {
+  const next = new Date(calendarMonth.value)
+  next.setUTCMonth(next.getUTCMonth() + 1)
+  calendarMonth.value = next
+}
+
+function openBooking(bookingId: number) {
+  router.push(`/host/bookings/${bookingId}`)
 }
 
 onMounted(loadDashboard)
@@ -258,6 +357,93 @@ onMounted(loadDashboard)
                 stroke-linejoin="round"
               />
             </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Booking Calendar -->
+      <div class="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-semibold text-[#222222]">Calendrier des réservations</h2>
+            <p class="text-sm text-gray-600">Jours occupés pour vos annonces</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              class="rounded-full border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 transition hover:border-gray-400 hover:text-[#222222]"
+              @click="prevMonth"
+            >
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+            <span class="text-sm font-semibold text-gray-700 capitalize">{{ calendarLabel }}</span>
+            <button
+              type="button"
+              class="rounded-full border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 transition hover:border-gray-400 hover:text-[#222222]"
+              @click="nextMonth"
+            >
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-7 gap-2 text-xs font-semibold text-gray-500">
+          <div class="text-center">Lun</div>
+          <div class="text-center">Mar</div>
+          <div class="text-center">Mer</div>
+          <div class="text-center">Jeu</div>
+          <div class="text-center">Ven</div>
+          <div class="text-center">Sam</div>
+          <div class="text-center">Dim</div>
+        </div>
+
+        <div class="mt-3 grid grid-cols-7 gap-2 text-sm">
+          <div
+            v-for="(day, index) in calendarDays"
+            :key="index"
+            class="group relative flex h-10 items-center justify-center rounded-lg border border-transparent text-gray-500"
+            :class="day.iso && bookingDays.has(day.iso) ? 'bg-rose-50 text-rose-700 border-rose-100 font-semibold cursor-pointer' : 'text-gray-700'"
+            @click="day.iso && bookingsByDay.get(day.iso)?.length ? openBooking(bookingsByDay.get(day.iso)?.[0]?.id ?? 0) : undefined"
+          >
+            <span v-if="day.date">{{ day.date.getUTCDate() }}</span>
+
+            <div
+              v-if="day.iso && bookingsByDay.get(day.iso)?.length"
+              class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-3 w-64 -translate-x-1/2 rounded-xl border border-gray-200 bg-white p-3 text-left text-xs text-gray-700 opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+            >
+              <p class="mb-2 text-xs font-semibold text-gray-500">Réservations</p>
+              <ul class="space-y-2">
+                <li
+                  v-for="booking in bookingsByDay.get(day.iso) ?? []"
+                  :key="booking.id"
+                  class="pointer-events-auto rounded-lg border border-gray-100 px-2 py-1 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                  @click.stop="openBooking(booking.id)"
+                >
+                  <p class="font-semibold text-gray-800">
+                    {{ booking.listing?.title ?? `Annonce #${booking.listing_id}` }}
+                  </p>
+                  <p class="text-[11px] text-gray-500">
+                    {{ booking.guest?.name ?? `Voyageur #${booking.guest_user_id}` }}
+                  </p>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
