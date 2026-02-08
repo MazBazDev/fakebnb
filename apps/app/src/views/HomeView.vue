@@ -18,6 +18,7 @@ const lastPage = ref(1)
 const allCities = ref<string[]>([])
 const searchDebounceMs = 300
 let searchDebounceTimer: number | null = null
+let guestDebounceTimer: number | null = null
 
 const cities = computed(() => {
   if (allCities.value.length > 0) {
@@ -77,7 +78,17 @@ watch(search, () => {
   }, searchDebounceMs)
 })
 
-watch([selectedCity, minGuests], () => {
+watch(minGuests, () => {
+  if (guestDebounceTimer) {
+    window.clearTimeout(guestDebounceTimer)
+  }
+  guestDebounceTimer = window.setTimeout(() => {
+    page.value = 1
+    load()
+  }, searchDebounceMs)
+})
+
+watch(selectedCity, () => {
   page.value = 1
   load()
 })
@@ -86,6 +97,10 @@ onUnmounted(() => {
   if (searchDebounceTimer) {
     window.clearTimeout(searchDebounceTimer)
     searchDebounceTimer = null
+  }
+  if (guestDebounceTimer) {
+    window.clearTimeout(guestDebounceTimer)
+    guestDebounceTimer = null
   }
 })
 
