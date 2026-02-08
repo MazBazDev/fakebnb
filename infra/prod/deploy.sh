@@ -17,13 +17,26 @@ REGISTRY_HOST_CLEAN="${REGISTRY_HOST_CLEAN%%/*}"
 REGISTRY_USERNAME_CLEAN="$(printf '%s' "${REGISTRY_USERNAME}" | tr -d '\r\n')"
 REGISTRY_PASSWORD_CLEAN="$(printf '%s' "${REGISTRY_PASSWORD}" | tr -d '\r\n')"
 
+ensure_latest_tag() {
+  local image="$1"
+  local last_segment="${image##*/}"
+  if [[ "${last_segment}" == *:* ]]; then
+    printf '%s' "${image}"
+  else
+    printf '%s:latest' "${image}"
+  fi
+}
+
+IMAGE_API_TAGGED="$(ensure_latest_tag "${IMAGE_API}")"
+IMAGE_APP_TAGGED="$(ensure_latest_tag "${IMAGE_APP}")"
+
 echo "Logging into registry: ${REGISTRY_HOST_CLEAN} (user: ${REGISTRY_USERNAME_CLEAN}, pass_len: ${#REGISTRY_PASSWORD_CLEAN})"
 printf '%s' "${REGISTRY_PASSWORD_CLEAN}" | docker login "${REGISTRY_HOST_CLEAN}" -u "${REGISTRY_USERNAME_CLEAN}" --password-stdin
 
 echo "Deploying API stack"
-IMAGE_API="${IMAGE_API}" docker compose -f infra/prod/api/compose.yml --env-file "${API_ENV_FILE}" pull
-IMAGE_API="${IMAGE_API}" docker compose -f infra/prod/api/compose.yml --env-file "${API_ENV_FILE}" up -d --remove-orphans
+IMAGE_API="${IMAGE_API_TAGGED}" docker compose -f infra/prod/api/compose.yml --env-file "${API_ENV_FILE}" pull
+IMAGE_API="${IMAGE_API_TAGGED}" docker compose -f infra/prod/api/compose.yml --env-file "${API_ENV_FILE}" up -d --remove-orphans --pull always --force-recreate
 
 echo "Deploying App stack"
-IMAGE_APP="${IMAGE_APP}" docker compose -f infra/prod/app/compose.yml --env-file "${APP_ENV_FILE}" pull
-IMAGE_APP="${IMAGE_APP}" docker compose -f infra/prod/app/compose.yml --env-file "${APP_ENV_FILE}" up -d --remove-orphans
+IMAGE_APP="${IMAGE_APP_TAGGED}" docker compose -f infra/prod/app/compose.yml --env-file "${APP_ENV_FILE}" pull
+IMAGE_APP="${IMAGE_APP_TAGGED}" docker compose -f infra/prod/app/compose.yml --env-file "${APP_ENV_FILE}" up -d --remove-orphans --pull always --force-recreate
