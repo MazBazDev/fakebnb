@@ -7,6 +7,7 @@ use App\Http\Requests\ReplyReviewRequest;
 use App\Http\Requests\StoreReviewRequest;
 use App\Http\Resources\ReviewResource;
 use App\Models\Booking;
+use App\Models\Cohost;
 use App\Models\Listing;
 use App\Models\Review;
 use Dedoc\Scramble\Attributes\Group;
@@ -27,6 +28,44 @@ class ReviewController extends Controller
         $reviews = Review::query()
             ->where('listing_id', $listing->id)
             ->with(['guest', 'repliedBy'])
+            ->latest()
+            ->paginate($perPage);
+
+        return ReviewResource::collection($reviews);
+    }
+
+    public function hostIndex(Request $request)
+    {
+        $perPage = (int) $request->integer('per_page', 10);
+        $perPage = max(1, min($perPage, 50));
+        $listingId = $request->integer('listing_id');
+        $user = $request->user();
+        $scope = $request->string('scope')->toString();
+
+        $hostListingIds = Listing::query()
+            ->where('host_user_id', $user->id)
+            ->pluck('id');
+
+        $cohostListingIds = Cohost::query()
+            ->where('cohost_user_id', $user->id)
+            ->pluck('listing_id');
+
+        $allowedListingIds = $hostListingIds->merge($cohostListingIds)->unique();
+
+        if ($listingId && ! $allowedListingIds->contains($listingId)) {
+            abort(403);
+        }
+
+        $scopedListingIds = match ($scope) {
+            'host' => $hostListingIds,
+            'cohost' => $cohostListingIds,
+            default => $allowedListingIds,
+        };
+
+        $reviews = Review::query()
+            ->whereIn('listing_id', $scopedListingIds)
+            ->when($listingId, fn ($query) => $query->where('listing_id', $listingId))
+            ->with(['guest', 'repliedBy', 'listing'])
             ->latest()
             ->paginate($perPage);
 

@@ -155,6 +155,12 @@ const router = createRouter({
       props: true,
     },
     {
+      path: '/host/reviews',
+      name: 'host-reviews',
+      component: () => import('@/views/HostReviewsView.vue'),
+      meta: { requiresAuth: true, layout: 'host' },
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/views/NotFoundView.vue'),

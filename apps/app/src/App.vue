@@ -146,6 +146,12 @@ watch(
             Messages
           </RouterLink>
           <RouterLink
+            to="/host/reviews"
+            class="nav-link"
+          >
+            Avis
+          </RouterLink>
+          <RouterLink
             to="/host/cohosts"
             class="nav-link"
           >
@@ -342,6 +348,20 @@ watch(
             @click="sidebarOpen = false"
           >
             Réservations
+          </RouterLink>
+          <RouterLink
+            to="/host/messages"
+            class="nav-link"
+            @click="sidebarOpen = false"
+          >
+            Messages
+          </RouterLink>
+          <RouterLink
+            to="/host/reviews"
+            class="nav-link"
+            @click="sidebarOpen = false"
+          >
+            Avis
           </RouterLink>
           <RouterLink
             to="/host/cohosts"

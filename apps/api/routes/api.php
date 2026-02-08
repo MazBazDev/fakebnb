@@ -49,6 +49,7 @@ Route::prefix('v1')->group(function () {
         Route::patch('/bookings/{booking}/reject', [BookingController::class, 'reject']);
         Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel']);
         Route::post('/reviews/{review}/reply', [ReviewController::class, 'reply']);
+        Route::get('/host/reviews', [ReviewController::class, 'hostIndex']);
 
         Route::post('/payments/intent', [PaymentController::class, 'intent']);
         Route::post('/payments/{payment}/authorize', [PaymentController::class, 'authorizePayment']);
