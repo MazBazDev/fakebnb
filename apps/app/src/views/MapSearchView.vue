@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import maplibregl, { type Map as MapLibreMap, type MapOptions } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
@@ -17,10 +17,13 @@ const search = ref('')
 const selectedCity = ref('')
 const minGuests = ref<number | ''>('')
 const total = ref(0)
+const selectedListingId = ref<number | null>(null)
+const imageIndexByListing = ref<Record<number, number>>({})
 
 const mapContainer = ref<HTMLDivElement | null>(null)
 const map = ref<MapLibreMap | null>(null)
 const markers = ref<Array<{ remove: () => void }>>([])
+const listingRefs = new Map<number, HTMLElement>()
 let moveTimeout: number | null = null
 
 const paddingKm = 5
@@ -72,7 +75,8 @@ function refreshMarkers() {
 
   listings.value.forEach((listing) => {
     if (listing.latitude == null || listing.longitude == null) return
-    const markerColor = isDark.value ? '#ff385c' : '#0f172a'
+    const isSelected = listing.id === selectedListingId.value
+    const markerColor = isSelected ? '#ff385c' : isDark.value ? '#ff385c' : '#0f172a'
     const marker = new maplibregl.Marker({ color: markerColor })
       .setLngLat([listing.longitude, listing.latitude])
       .setPopup(
@@ -81,6 +85,10 @@ function refreshMarkers() {
         )
       )
       .addTo(mapInstance)
+
+    marker.getElement().addEventListener('click', () => {
+      selectListing(listing.id)
+    })
 
     markers.value.push(marker)
   })
@@ -100,6 +108,51 @@ function clearFilters() {
   selectedCity.value = ''
   minGuests.value = ''
   load()
+}
+
+function setListingRef(listingId: number, el: HTMLElement | null) {
+  if (!el) {
+    listingRefs.delete(listingId)
+    return
+  }
+  listingRefs.set(listingId, el)
+}
+
+async function selectListing(listingId: number) {
+  selectedListingId.value = listingId
+  if (!imageIndexByListing.value[listingId]) {
+    imageIndexByListing.value = { ...imageIndexByListing.value, [listingId]: 0 }
+  }
+  await nextTick()
+  const el = listingRefs.get(listingId)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+  refreshMarkers()
+}
+
+function currentImageUrl(listing: Listing): string | null {
+  if (!listing.images || listing.images.length === 0) return null
+  const index = imageIndexByListing.value[listing.id] ?? 0
+  return listing.images[index]?.url ?? listing.images[0]?.url ?? null
+}
+
+function setImageIndex(listingId: number, index: number) {
+  imageIndexByListing.value = { ...imageIndexByListing.value, [listingId]: index }
+}
+
+function nextImage(listing: Listing) {
+  if (!listing.images || listing.images.length === 0) return
+  const index = imageIndexByListing.value[listing.id] ?? 0
+  const nextIndex = (index + 1) % listing.images.length
+  setImageIndex(listing.id, nextIndex)
+}
+
+function prevImage(listing: Listing) {
+  if (!listing.images || listing.images.length === 0) return
+  const index = imageIndexByListing.value[listing.id] ?? 0
+  const nextIndex = (index - 1 + listing.images.length) % listing.images.length
+  setImageIndex(listing.id, nextIndex)
 }
 
 onMounted(() => {
@@ -150,6 +203,12 @@ onUnmounted(() => {
 
 watch([search, selectedCity, minGuests], () => {
   load()
+})
+
+watch(listings, () => {
+  if (selectedListingId.value && !listings.value.some((listing) => listing.id === selectedListingId.value)) {
+    selectedListingId.value = null
+  }
 })
 
 // Rafraîchir les markers quand le thème change
@@ -300,7 +359,14 @@ watch(isDark, () => {
 
         <!-- Listings -->
         <div v-else class="listings-list">
-          <article v-for="listing in listings" :key="listing.id" class="listing-card">
+          <article
+            v-for="listing in listings"
+            :key="listing.id"
+            :ref="(el) => setListingRef(listing.id, el as HTMLElement | null)"
+            class="listing-card"
+            :class="{ 'is-selected': selectedListingId === listing.id }"
+            @click="selectListing(listing.id)"
+          >
             <div class="listing-header">
               <div class="listing-info">
                 <p class="listing-city">{{ listing.city }}</p>
@@ -313,18 +379,56 @@ watch(isDark, () => {
             <p class="listing-description">
               {{ listing.description.slice(0, 90) }}{{ listing.description.length > 90 ? '…' : '' }}
             </p>
-            <RouterLink :to="`/listings/${listing.id}`" class="listing-link">
-              Voir le détail
-              <svg class="link-arrow" fill="none" viewBox="0 0 24 24">
-                <path
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 5l7 7-7 7"
+            <div v-if="selectedListingId === listing.id" class="listing-expanded">
+              <div class="listing-carousel">
+                <button
+                  v-if="listing.images?.length"
+                  class="carousel-btn prev"
+                  type="button"
+                  @click.stop="prevImage(listing)"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M15 6l-6 6 6 6"
+                    />
+                  </svg>
+                </button>
+                <img
+                  v-if="currentImageUrl(listing)"
+                  :src="currentImageUrl(listing)"
+                  :alt="listing.title"
+                  class="carousel-image"
                 />
-              </svg>
-            </RouterLink>
+                <div v-else class="carousel-empty">Aucune image</div>
+                <button
+                  v-if="listing.images?.length"
+                  class="carousel-btn next"
+                  type="button"
+                  @click.stop="nextImage(listing)"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 6l6 6-6 6"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <RouterLink
+                :to="`/listings/${listing.id}`"
+                class="listing-cta"
+                @click.stop
+              >
+                Voir l'annonce
+              </RouterLink>
+            </div>
           </article>
         </div>
       </div>
@@ -651,12 +755,17 @@ watch(isDark, () => {
   border-radius: 1rem;
   border: 1px solid var(--color-border-primary);
   background-color: var(--color-bg-elevated);
-  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .listing-card:hover {
   border-color: var(--color-border-secondary);
   box-shadow: var(--shadow-md);
+}
+
+.listing-card.is-selected {
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 18px 40px -24px rgba(15, 23, 42, 0.45);
 }
 
 .listing-header {
@@ -707,28 +816,79 @@ watch(isDark, () => {
   color: var(--color-text-secondary);
 }
 
-.listing-link {
+.listing-expanded {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.listing-carousel {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 180px;
+  border-radius: 0.85rem;
+  overflow: hidden;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-primary);
+}
+
+.carousel-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carousel-empty {
+  font-size: 0.85rem;
+  color: var(--color-text-tertiary);
+}
+
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-primary);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.carousel-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.carousel-btn.prev {
+  left: 0.5rem;
+}
+
+.carousel-btn.next {
+  right: 0.5rem;
+}
+
+.listing-cta {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  margin-top: 0.75rem;
-  font-size: 0.75rem;
+  justify-content: center;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  background: var(--color-brand-primary);
+  color: #fff;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: var(--color-text-primary);
-  transition: color var(--transition-fast);
+  text-decoration: none;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.listing-link:hover {
-  color: var(--color-brand-primary);
+.listing-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
-.link-arrow {
-  width: 0.875rem;
-  height: 0.875rem;
-  transition: transform var(--transition-fast);
-}
-
-.listing-link:hover .link-arrow {
-  transform: translateX(2px);
-}
 </style>
