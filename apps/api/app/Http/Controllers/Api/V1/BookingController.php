@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Booking\StoreBookingRequest;
 use App\Http\Resources\BookingResource;
+use App\Http\Resources\ConversationResource;
 use App\Models\Booking;
 use App\Services\BookingService;
+use App\Services\ConversationService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\Request;
 
@@ -21,6 +23,28 @@ class BookingController extends Controller
         $bookings = $bookingService->listForUser($request->user());
 
         return BookingResource::collection($bookings);
+    }
+
+    /**
+     * Afficher une réservation.
+     */
+    public function show(Request $request, Booking $booking, BookingService $bookingService)
+    {
+        $this->authorize('view', $booking);
+
+        $booking = $bookingService->findForUser($request->user(), $booking);
+
+        return BookingResource::make($booking);
+    }
+
+    /**
+     * Récupérer ou créer une conversation pour une réservation.
+     */
+    public function conversation(Request $request, Booking $booking, ConversationService $conversationService)
+    {
+        $conversation = $conversationService->createForBooking($request->user(), $booking);
+
+        return ConversationResource::make($conversation->load(['listing', 'messages']));
     }
 
     /**

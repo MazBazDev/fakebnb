@@ -17,8 +17,14 @@ export type Conversation = {
 type ConversationsResponse = { data: Conversation[] }
 type ConversationResponse = { data: Conversation }
 
-export async function fetchConversations() {
+export async function fetchGuestConversations() {
   const response = await apiFetch<ConversationsResponse>('/conversations')
+  return response.data
+}
+
+export async function fetchHostConversations(listingId?: number) {
+  const query = listingId ? `?listing_id=${listingId}` : ''
+  const response = await apiFetch<ConversationsResponse>(`/host/conversations${query}`)
   return response.data
 }
 
@@ -26,6 +32,13 @@ export async function createConversation(listingId: number) {
   const response = await apiFetch<ConversationResponse>('/conversations', {
     method: 'POST',
     body: JSON.stringify({ listing_id: listingId }),
+  })
+  return response.data
+}
+
+export async function createConversationForBooking(bookingId: number) {
+  const response = await apiFetch<ConversationResponse>(`/bookings/${bookingId}/conversation`, {
+    method: 'POST',
   })
   return response.data
 }

@@ -20,6 +20,22 @@ class BookingResource extends JsonResource
                     'profile_photo_url' => $this->guest->profile_photo_url,
                 ];
             }),
+            'listing' => $this->whenLoaded('listing', function () {
+                return [
+                    'id' => $this->listing->id,
+                    'title' => $this->listing->title,
+                    'city' => $this->listing->city,
+                    'images' => $this->listing->relationLoaded('images')
+                        ? $this->listing->images->map(function ($image) {
+                            return [
+                                'id' => $image->id,
+                                'url' => \Illuminate\Support\Facades\Storage::disk('public')->url($image->path),
+                                'position' => $image->position,
+                            ];
+                        })->values()
+                        : [],
+                ];
+            }),
             'start_date' => $this->start_date?->toDateString(),
             'end_date' => $this->end_date?->toDateString(),
             'status' => $this->status,

@@ -30,12 +30,17 @@ class BookingService
             ->pluck('listing_id');
 
         return Booking::query()
-            ->with(['listing', 'guest', 'payment'])
+            ->with(['listing.images', 'guest', 'payment'])
             ->where('guest_user_id', $user->id)
             ->orWhereIn('listing_id', $hostListingIds)
             ->orWhereIn('listing_id', $cohostListingIds)
             ->latest()
             ->get();
+    }
+
+    public function findForUser(User $user, Booking $booking): Booking
+    {
+        return $booking->load(['listing.images', 'guest', 'payment']);
     }
 
     public function listConfirmedForListing(Listing $listing)

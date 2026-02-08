@@ -20,7 +20,11 @@ class BookingPolicy
 
     public function view(User $user, Booking $booking): bool
     {
-        return $booking->guest_user_id === $user->id;
+        if ($booking->guest_user_id === $user->id) {
+            return true;
+        }
+
+        return $this->canManageBooking($user, $booking);
     }
 
     public function cancel(User $user, Booking $booking): bool

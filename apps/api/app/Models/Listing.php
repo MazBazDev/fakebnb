@@ -51,4 +51,9 @@ class Listing extends Model
     {
         return $this->hasMany(Cohost::class);
     }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
 }

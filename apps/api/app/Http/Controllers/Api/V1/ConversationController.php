@@ -17,7 +17,18 @@ class ConversationController extends Controller
      */
     public function index(Request $request, ConversationService $conversationService)
     {
-        $conversations = $conversationService->listForUser($request->user());
+        $conversations = $conversationService->listForGuest($request->user());
+
+        return ConversationResource::collection($conversations);
+    }
+
+    /**
+     * Liste des conversations côté hôte.
+     */
+    public function hostIndex(Request $request, ConversationService $conversationService)
+    {
+        $listingId = $request->integer('listing_id');
+        $conversations = $conversationService->listForHost($request->user(), $listingId ?: null);
 
         return ConversationResource::collection($conversations);
     }

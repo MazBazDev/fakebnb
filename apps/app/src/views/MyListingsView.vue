@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import {
   deleteListing,
@@ -18,6 +18,7 @@ const isLoading = ref(false)
 const error = ref<string | null>(null)
 const deleteBusy = ref<Set<number>>(new Set())
 const deleteError = ref<string | null>(null)
+const openMenuId = ref<number | null>(null)
 
 // Filters & Pagination
 const search = ref('')
@@ -115,6 +116,21 @@ function isDeleting(listingId: number): boolean {
   return deleteBusy.value.has(listingId)
 }
 
+function toggleMenu(listingId: number) {
+  openMenuId.value = openMenuId.value === listingId ? null : listingId
+}
+
+function closeMenu() {
+  openMenuId.value = null
+}
+
+function handleDocumentClick(event: MouseEvent) {
+  const target = event.target as HTMLElement | null
+  if (!target) return
+  if (target.closest('[data-listing-menu]')) return
+  closeMenu()
+}
+
 function canAccessMessages(listing: Listing): boolean {
   return activeTab.value === 'host' || !!listing.cohost_permissions?.can_read_conversations
 }
@@ -151,7 +167,14 @@ watch(activeTab, () => {
 // Lifecycle
 // ============================================================================
 
-onMounted(load)
+onMounted(() => {
+  load()
+  document.addEventListener('click', handleDocumentClick)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleDocumentClick)
+})
 </script>
 
 <template>
@@ -293,7 +316,7 @@ onMounted(load)
       <article
         v-for="listing in listings"
         :key="listing.id"
-        class="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
+        class="group flex flex-col rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
       >
         <!-- Image -->
         <div class="relative aspect-square overflow-hidden bg-gray-100">
@@ -337,6 +360,56 @@ onMounted(load)
               Co-hôte
             </span>
           </div>
+
+          <!-- Actions Menu Notch -->
+          <div class="absolute right-3 top-3" data-listing-menu>
+            <button
+              type="button"
+              class="flex h-9 items-center gap-1.5 rounded-full border border-rose-200/70 bg-rose-50/95 px-3 text-xs font-semibold text-rose-700 shadow-lg backdrop-blur transition hover:bg-rose-100"
+              @click.stop="toggleMenu(listing.id)"
+            >
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 6h.01M12 12h.01M12 18h.01"
+                />
+              </svg>
+              Actions
+            </button>
+
+            <div
+              v-if="openMenuId === listing.id"
+              class="absolute right-0 z-30 mt-2 w-48 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
+            >
+              <RouterLink
+                :to="`/listings/${listing.id}`"
+                class="block px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:text-[#222222]"
+                @click="closeMenu"
+              >
+                Voir l'annonce
+              </RouterLink>
+              <RouterLink
+                v-if="canEdit(listing)"
+                :to="`/host/listings/${listing.id}/edit`"
+                class="block px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:text-[#222222]"
+                @click="closeMenu"
+              >
+                Modifier l'annonce
+              </RouterLink>
+              <button
+                v-if="activeTab === 'host'"
+                class="block w-full px-4 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
+                type="button"
+                :disabled="isDeleting(listing.id)"
+                @click="removeListing(listing)"
+              >
+                {{ isDeleting(listing.id) ? 'Suppression...' : 'Supprimer' }}
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Content -->
@@ -369,84 +442,7 @@ onMounted(load)
             </div>
           </div>
 
-          <!-- Actions -->
-          <div class="mt-6 flex flex-wrap gap-2 border-t border-gray-100 pt-4">
-            <RouterLink
-              :to="`/listings/${listing.id}`"
-              class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 transition hover:text-[#222222]"
-            >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-                <path
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                />
-              </svg>
-              Voir
-            </RouterLink>
-
-            <RouterLink
-              v-if="canAccessMessages(listing)"
-              :to="`/host/listings/${listing.id}/messages`"
-              class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 transition hover:text-[#222222]"
-            >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
-              Messages
-            </RouterLink>
-
-            <RouterLink
-              v-if="canEdit(listing)"
-              :to="`/host/listings/${listing.id}/edit`"
-              class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 transition hover:text-[#222222]"
-            >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                />
-              </svg>
-              Modifier
-            </RouterLink>
-
-            <button
-              v-if="activeTab === 'host'"
-              class="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-red-600 transition hover:text-red-700 disabled:opacity-40"
-              type="button"
-              :disabled="isDeleting(listing.id)"
-              @click="removeListing(listing)"
-            >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                />
-              </svg>
-              {{ isDeleting(listing.id) ? 'Suppression...' : 'Supprimer' }}
-            </button>
-          </div>
+          <!-- Actions (moved to image notch) -->
         </div>
       </article>
     </div>

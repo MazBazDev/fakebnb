@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\ListingImageController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PaymentController;
+use App\Http\Controllers\Api\V1\ReviewController;
 use App\Http\Controllers\Api\V1\StatusController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +26,8 @@ Route::prefix('v1')->group(function () {
         ->middleware('auth.api.optional');
     Route::get('/listings/{listing}/bookings', [ListingController::class, 'bookings'])
         ->middleware('auth.api.optional');
+    Route::get('/listings/{listing}/reviews', [ReviewController::class, 'index'])
+        ->middleware('auth.api.optional');
 
     Route::post('/auth/register', [AuthController::class, 'register']);
 
@@ -38,10 +41,14 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/bookings', [BookingController::class, 'index']);
         Route::get('/bookings/active-count', [BookingController::class, 'activeCount']);
+        Route::get('/bookings/{booking}', [BookingController::class, 'show']);
+        Route::post('/bookings/{booking}/conversation', [BookingController::class, 'conversation']);
         Route::post('/bookings', [BookingController::class, 'store']);
+        Route::post('/bookings/{booking}/reviews', [ReviewController::class, 'store']);
         Route::patch('/bookings/{booking}/confirm', [BookingController::class, 'confirm']);
         Route::patch('/bookings/{booking}/reject', [BookingController::class, 'reject']);
         Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel']);
+        Route::post('/reviews/{review}/reply', [ReviewController::class, 'reply']);
 
         Route::post('/payments/intent', [PaymentController::class, 'intent']);
         Route::post('/payments/{payment}/authorize', [PaymentController::class, 'authorizePayment']);
@@ -52,6 +59,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
 
         Route::get('/conversations', [ConversationController::class, 'index']);
+        Route::get('/host/conversations', [ConversationController::class, 'hostIndex']);
         Route::post('/conversations', [ConversationController::class, 'store']);
         Route::get('/conversations/{conversation}/messages', [MessageController::class, 'index']);
         Route::post('/conversations/{conversation}/messages', [MessageController::class, 'store']);

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { fetchConversations, type Conversation } from '@/services/conversations'
+import { fetchHostConversations, type Conversation } from '@/services/conversations'
 import { fetchListing, type Listing } from '@/services/listings'
 import { useAsyncData, useDateFormat } from '@/composables'
 import { PageHeader, LoadingSpinner, EmptyState, AlertMessage } from '@/components/ui'
@@ -29,17 +29,13 @@ const {
 >(
   async () => {
     const [conversationsData, listingData] = await Promise.all([
-      fetchConversations(),
+      fetchHostConversations(listingId.value),
       fetchListing(listingId.value),
     ])
 
-    const filteredConversations = conversationsData.filter(
-      (conversation) => conversation.listing_id === listingId.value
-    )
-
     return {
       listing: listingData,
-      conversations: filteredConversations,
+      conversations: conversationsData,
     }
   },
   {

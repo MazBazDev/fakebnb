@@ -2,8 +2,7 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { cancelBooking, fetchBookings, type Booking } from '@/services/bookings'
-import { fetchListings, type Listing } from '@/services/listings'
-import { createConversation } from '@/services/conversations'
+import { createConversationForBooking } from '@/services/conversations'
 import { useAuthStore } from '@/stores/auth'
 import { getEcho } from '@/services/echo'
 import { useAsyncData, useBookingStatus, useDateFormat } from '@/composables'
@@ -25,17 +24,11 @@ const { formatDateRange } = useDateFormat()
 
 // Data fetching with useAsyncData
 const bookings = ref<Booking[]>([])
-const listings = ref<Listing[]>([])
-
 const { isLoading, error } = useAsyncData(
   async () => {
-    const [bookingsData, listingsResponse] = await Promise.all([
-      fetchBookings(),
-      fetchListings(),
-    ])
+    const bookingsData = await fetchBookings()
     bookings.value = bookingsData
-    listings.value = listingsResponse.data
-    return { bookings: bookingsData, listings: listingsResponse.data }
+    return { bookings: bookingsData }
   },
   { errorMessage: 'Impossible de charger les réservations.' }
 )
@@ -57,13 +50,12 @@ const breadcrumbs = [
 ]
 
 // Helper functions
-function listingFor(booking: Booking): Listing | undefined {
-  return listings.value.find((item) => item.id === booking.listing_id)
-}
-
 function listingLabel(listingId: number): string {
-  const listing = listings.value.find((item) => item.id === listingId)
-  return listing ? `${listing.title} — ${listing.city}` : `Annonce #${listingId}`
+  const booking = bookings.value.find((item) => item.listing_id === listingId)
+  if (booking?.listing) {
+    return `${booking.listing.title} — ${booking.listing.city}`
+  }
+  return `Annonce #${listingId}`
 }
 
 function isActiveOrFuture(booking: Booking): boolean {
@@ -77,7 +69,7 @@ function isActiveOrFuture(booking: Booking): boolean {
 async function contactHost(booking: Booking): Promise<void> {
   contactError.value = null
   try {
-    const conversation = await createConversation(booking.listing_id)
+    const conversation = await createConversationForBooking(booking.id)
     await router.push(`/messages/${conversation.id}`)
   } catch (err) {
     contactError.value = err instanceof Error ? err.message : "Impossible de contacter l'hôte."
@@ -173,8 +165,8 @@ onUnmounted(() => {
             <!-- Image -->
             <div class="relative aspect-[4/3] overflow-hidden bg-gray-100 md:aspect-auto">
               <img
-                v-if="listingFor(booking)?.images?.length"
-                :src="listingFor(booking)?.images?.[0]?.url"
+                v-if="booking.listing?.images?.length"
+                :src="booking.listing.images[0]?.url"
                 :alt="listingLabel(booking.listing_id)"
                 class="h-full w-full object-cover"
               />
@@ -198,7 +190,7 @@ onUnmounted(() => {
                   <div class="flex-1">
                     <p class="text-sm font-medium text-gray-500">Réservation #{{ booking.id }}</p>
                     <h2 class="mt-1 text-2xl font-semibold tracking-tight text-[#222222]">
-                      {{ listingLabel(booking.listing_id) }}
+                      {{ booking.listing ? `${booking.listing.title} — ${booking.listing.city}` : listingLabel(booking.listing_id) }}
                     </h2>
                   </div>
                   <StatusBadge :status="booking.status" />
@@ -220,6 +212,22 @@ onUnmounted(() => {
 
               <!-- Actions -->
               <div class="mt-6 flex flex-wrap gap-3 border-t border-gray-100 pt-6">
+                <RouterLink
+                  :to="`/bookings/${booking.id}`"
+                  class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-[#222222] transition hover:border-black hover:bg-gray-50"
+                >
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <path
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                    />
+                  </svg>
+                  Voir la réservation
+                </RouterLink>
+
                 <RouterLink
                   :to="`/listings/${booking.listing_id}`"
                   class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-[#222222] transition hover:border-black hover:bg-gray-50"

@@ -8,7 +8,7 @@ import {
   rejectBooking,
   type Booking,
 } from '@/services/bookings'
-import { createConversation } from '@/services/conversations'
+import { createConversationForBooking } from '@/services/conversations'
 import { fetchCohostListings, fetchMyListings, type Listing } from '@/services/listings'
 import { getEcho } from '@/services/echo'
 import { useAuthStore } from '@/stores/auth'
@@ -138,7 +138,7 @@ async function openConversation(booking: Booking): Promise<void> {
   actionError.value = null
 
   try {
-    const conversation = await createConversation(booking.listing_id)
+    const conversation = await createConversationForBooking(booking.id)
     await router.push(`/host/messages/${conversation.id}?listing=${booking.listing_id}`)
   } catch (err) {
     actionError.value =
@@ -241,6 +241,13 @@ onUnmounted(() => {
 
           <!-- Actions -->
           <div class="mt-4 flex flex-wrap items-center gap-2">
+            <RouterLink
+              :to="`/host/bookings/${booking.id}`"
+              class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Voir la réservation
+            </RouterLink>
+
             <button
               type="button"
               class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"

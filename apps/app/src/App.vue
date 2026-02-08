@@ -140,6 +140,12 @@ watch(
             Réservations
           </RouterLink>
           <RouterLink
+            to="/host/messages"
+            class="nav-link"
+          >
+            Messages
+          </RouterLink>
+          <RouterLink
             to="/host/cohosts"
             class="nav-link"
           >

@@ -32,6 +32,13 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/bookings/:id',
+      name: 'booking-detail',
+      component: () => import('@/views/BookingDetailView.vue'),
+      meta: { requiresAuth: true },
+      props: true,
+    },
+    {
       path: '/checkout/:bookingId',
       name: 'checkout',
       component: () => import('@/views/CheckoutView.vue'),
@@ -121,11 +128,24 @@ const router = createRouter({
       meta: { requiresAuth: true, layout: 'host' },
     },
     {
+      path: '/host/bookings/:id',
+      name: 'host-booking-detail',
+      component: () => import('@/views/HostBookingDetailView.vue'),
+      meta: { requiresAuth: true, layout: 'host' },
+      props: true,
+    },
+    {
       path: '/host/listings/:id/messages',
       name: 'host-listing-messages',
       component: () => import('@/views/HostListingMessagesView.vue'),
       meta: { requiresAuth: true, layout: 'host' },
       props: true,
+    },
+    {
+      path: '/host/messages',
+      name: 'host-messages',
+      component: () => import('@/views/HostMessagesView.vue'),
+      meta: { requiresAuth: true, layout: 'host' },
     },
     {
       path: '/host/messages/:id',

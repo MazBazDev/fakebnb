@@ -45,6 +45,11 @@ export async function fetchBookings() {
   return response.data
 }
 
+export async function fetchBooking(id: number) {
+  const response = await apiFetch<BookingResponse>(`/bookings/${id}`)
+  return response.data
+}
+
 export async function fetchActiveBookingCount() {
   const response = await apiFetch<{ count: number }>('/bookings/active-count')
   return response.count
