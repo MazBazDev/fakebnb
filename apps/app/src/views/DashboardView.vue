@@ -473,10 +473,11 @@ onMounted(loadDashboard)
           />
 
           <div v-else class="space-y-3">
-            <div
+            <RouterLink
               v-for="booking in recentBookings"
               :key="booking.id"
-              class="group rounded-xl border border-gray-100 bg-gray-50 p-4 transition hover:border-gray-200 hover:bg-white hover:shadow-sm"
+              :to="`/host/bookings/${booking.id}`"
+              class="group block rounded-xl border border-gray-100 bg-gray-50 p-4 transition hover:border-gray-200 hover:bg-white hover:shadow-sm"
             >
               <div class="flex items-start justify-between gap-3">
                 <div class="flex-1 space-y-1">
@@ -489,7 +490,7 @@ onMounted(loadDashboard)
                   <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                 </svg>
               </div>
-            </div>
+            </RouterLink>
           </div>
         </div>
 
