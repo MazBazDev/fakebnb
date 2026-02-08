@@ -147,28 +147,6 @@ watch(
           </RouterLink>
         </nav>
 
-        <div class="sidebar-footer">
-          <div class="flex items-center gap-3">
-            <span
-              class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-700 text-xs font-semibold text-white"
-            >
-              <img v-if="avatarUrl" :src="avatarUrl" class="h-full w-full object-cover" />
-              <span v-else>{{ initials }}</span>
-            </span>
-            <div class="min-w-0 flex-1 text-sm">
-              <p class="truncate font-semibold text-primary">{{ auth.user?.name }}</p>
-              <p class="truncate text-xs text-secondary">{{ auth.user?.email }}</p>
-            </div>
-          </div>
-          <button
-            class="btn-outline w-full"
-            type="button"
-            :disabled="isLoggingOut"
-            @click="handleLogout"
-          >
-            {{ isLoggingOut ? 'Déconnexion...' : 'Déconnexion' }}
-          </button>
-        </div>
       </aside>
 
       <div class="flex flex-1 flex-col">
