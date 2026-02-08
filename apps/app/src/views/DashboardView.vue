@@ -77,7 +77,7 @@ function listingLabel(listingId: number) {
 }
 
 function formatAmount(value: number) {
-  return (value / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
+  return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
 }
 
 function sparklinePoints(values: number[], width = 400, height = 128, padding = 8) {
