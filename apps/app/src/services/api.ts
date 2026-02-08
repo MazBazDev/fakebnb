@@ -33,18 +33,6 @@ type TokenResponse = {
   expires_in: number
 }
 
-type CacheEntry<T> = {
-  data: T
-  etag?: string | null
-  expiresAt: number
-}
-
-type CacheOptions = {
-  key: string
-  ttlMs: number
-  varyByAuth?: boolean
-}
-
 let authTokenUpdater: ((payload: TokenUpdate) => void) | null = null
 let refreshPromise: Promise<string | null> | null = null
 
@@ -80,26 +68,6 @@ function persistTokens(payload: TokenUpdate) {
   }
 
   authTokenUpdater?.(payload)
-}
-
-function buildCacheKey(key: string, varyByAuth?: boolean) {
-  if (!varyByAuth) return `cache:${key}`
-  const token = getAuthToken()
-  return `cache:${key}:${token ?? 'guest'}`
-}
-
-function readCache<T>(key: string): CacheEntry<T> | null {
-  const raw = localStorage.getItem(key)
-  if (!raw) return null
-  try {
-    return JSON.parse(raw) as CacheEntry<T>
-  } catch {
-    return null
-  }
-}
-
-function writeCache<T>(key: string, entry: CacheEntry<T>) {
-  localStorage.setItem(key, JSON.stringify(entry))
 }
 
 function isTokenResponse(data: unknown): data is TokenResponse {
@@ -175,40 +143,6 @@ async function refreshAccessToken(): Promise<string | null> {
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   return apiFetchWithRetry<T>(path, options, true)
-}
-
-export async function apiFetchWithCache<T>(
-  path: string,
-  options: RequestInit = {},
-  cache: CacheOptions
-): Promise<T> {
-  const cacheKey = buildCacheKey(cache.key, cache.varyByAuth)
-  const cached = readCache<T>(cacheKey)
-  const isFresh = cached && cached.expiresAt > Date.now()
-
-  if (isFresh && cached) {
-    return cached.data
-  }
-
-  const headers = new Headers(options.headers ?? {})
-  if (cached?.etag) {
-    headers.set('If-None-Match', cached.etag)
-  }
-
-  const { response, data } = await apiFetchWithRetryRaw(path, { ...options, headers }, true, true)
-
-  if (response.status === 304 && cached) {
-    return cached.data
-  }
-
-  const etag = response.headers.get('ETag')
-  writeCache(cacheKey, {
-    data: data as T,
-    etag,
-    expiresAt: Date.now() + cache.ttlMs,
-  })
-
-  return data as T
 }
 
 async function apiFetchWithRetry<T>(

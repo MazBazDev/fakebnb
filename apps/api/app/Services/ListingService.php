@@ -6,6 +6,7 @@ use App\Models\Listing;
 use App\Models\User;
 use App\Models\Cohost;
 use App\Services\GeocodingService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
@@ -144,7 +145,7 @@ class ListingService
             }
         }
 
-        return Listing::create([
+        $listing = Listing::create([
             'host_user_id' => $host->id,
             'title' => $data['title'],
             'description' => $data['description'],
@@ -158,6 +159,10 @@ class ListingService
             'rules' => $data['rules'] ?? null,
             'amenities' => $data['amenities'] ?? [],
         ]);
+
+        $this->bumpListingsIndexCacheVersion();
+
+        return $listing;
     }
 
     public function update(User $user, Listing $listing, array $data): Listing
@@ -182,6 +187,8 @@ class ListingService
 
         $listing->fill($data)->save();
 
+        $this->bumpListingsIndexCacheVersion();
+
         return $listing->fresh();
     }
 
@@ -196,5 +203,15 @@ class ListingService
         Storage::disk('public')->deleteDirectory("listings/{$listing->id}");
 
         $listing->delete();
+
+        $this->bumpListingsIndexCacheVersion();
+    }
+
+    private function bumpListingsIndexCacheVersion(): void
+    {
+        $key = 'listings:index:version';
+
+        Cache::add($key, 1, now()->addDay());
+        Cache::increment($key);
     }
 }

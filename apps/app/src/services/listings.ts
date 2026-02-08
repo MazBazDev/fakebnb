@@ -1,4 +1,4 @@
-import { apiFetch, apiFetchWithCache } from '@/services/api'
+import { apiFetch } from '@/services/api'
 
 export type Listing = {
   id: number
@@ -47,25 +47,6 @@ type ListingsResponse = {
   }
 }
 
-function clearListingsCache(listingId?: number) {
-  const keysToRemove: string[] = []
-  for (let i = 0; i < localStorage.length; i += 1) {
-    const key = localStorage.key(i)
-    if (!key) continue
-    if (key.startsWith('cache:listings:')) {
-      keysToRemove.push(key)
-    }
-    if (listingId && key.startsWith(`cache:listing:${listingId}:`)) {
-      keysToRemove.push(key)
-    }
-    if (listingId && key === `cache:listing:${listingId}`) {
-      keysToRemove.push(key)
-    }
-  }
-
-  keysToRemove.forEach((key) => localStorage.removeItem(key))
-}
-
 export async function fetchListings(filters?: {
   search?: string
   city?: string
@@ -85,27 +66,12 @@ export async function fetchListings(filters?: {
   if (filters?.per_page) params.set('per_page', String(filters.per_page))
 
   const query = params.toString()
-  const response = await apiFetchWithCache<ListingsResponse>(
-    `/listings${query ? `?${query}` : ''}`,
-    {},
-    {
-      key: `listings:${query || 'all'}`,
-      ttlMs: 60000,
-    }
-  )
+  const response = await apiFetch<ListingsResponse>(`/listings${query ? `?${query}` : ''}`)
   return response
 }
 
 export async function fetchListing(id: number) {
-  const response = await apiFetchWithCache<ListingResponse>(
-    `/listings/${id}`,
-    {},
-    {
-      key: `listing:${id}`,
-      ttlMs: 60000,
-      varyByAuth: true,
-    }
-  )
+  const response = await apiFetch<ListingResponse>(`/listings/${id}`)
   return response.data
 }
 
@@ -148,7 +114,6 @@ export async function createListing(
     method: 'POST',
     body: JSON.stringify(payload),
   })
-  clearListingsCache(response.data.id)
   return response.data
 }
 
@@ -172,7 +137,6 @@ export async function uploadListingImages(listingId: number, files: File[]) {
     throw new Error(payload?.message ?? 'Erreur upload images.')
   }
 
-  clearListingsCache(listingId)
   return (await response.json()) as ListingResponse
 }
 
@@ -181,7 +145,6 @@ export async function reorderListingImages(listingId: number, imageIds: number[]
     method: 'PATCH',
     body: JSON.stringify({ image_ids: imageIds }),
   })
-  clearListingsCache(listingId)
   return response.data
 }
 
@@ -193,7 +156,6 @@ export async function updateListing(
     method: 'PATCH',
     body: JSON.stringify(payload),
   })
-  clearListingsCache(id)
   return response.data
 }
 
@@ -201,6 +163,5 @@ export async function deleteListing(id: number) {
   const response = await apiFetch<{ message: string }>(`/listings/${id}`, {
     method: 'DELETE',
   })
-  clearListingsCache(id)
   return response
 }

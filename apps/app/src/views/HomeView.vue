@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { fetchListings, type Listing } from '@/services/listings'
 
@@ -16,6 +16,8 @@ const perPage = 12
 const total = ref(0)
 const lastPage = ref(1)
 const allCities = ref<string[]>([])
+const searchDebounceMs = 300
+let searchDebounceTimer: number | null = null
 
 const cities = computed(() => {
   if (allCities.value.length > 0) {
@@ -70,9 +72,26 @@ function clearFilters() {
 
 onMounted(load)
 
-watch([search, selectedCity, minGuests], () => {
+watch(search, () => {
+  if (searchDebounceTimer) {
+    window.clearTimeout(searchDebounceTimer)
+  }
+  searchDebounceTimer = window.setTimeout(() => {
+    page.value = 1
+    load()
+  }, searchDebounceMs)
+})
+
+watch([selectedCity, minGuests], () => {
   page.value = 1
   load()
+})
+
+onUnmounted(() => {
+  if (searchDebounceTimer) {
+    window.clearTimeout(searchDebounceTimer)
+    searchDebounceTimer = null
+  }
 })
 
 function nextPage() {

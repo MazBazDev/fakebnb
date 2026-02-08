@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Listing;
 use App\Models\ListingImage;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -18,7 +19,7 @@ class ListingImageService
     {
         Gate::authorize('update', $listing);
 
-        return DB::transaction(function () use ($listing, $files) {
+        $images = DB::transaction(function () use ($listing, $files) {
             $position = (int) $listing->images()->max('position');
 
             $images = collect();
@@ -36,13 +37,17 @@ class ListingImageService
 
             return $images;
         });
+
+        $this->bumpListingsIndexCacheVersion();
+
+        return $images;
     }
 
     public function reorder(Listing $listing, array $imageIds): \Illuminate\Support\Collection
     {
         Gate::authorize('update', $listing);
 
-        return DB::transaction(function () use ($listing, $imageIds) {
+        $images = DB::transaction(function () use ($listing, $imageIds) {
             $images = ListingImage::query()
                 ->where('listing_id', $listing->id)
                 ->whereIn('id', $imageIds)
@@ -59,5 +64,17 @@ class ListingImageService
 
             return $listing->images()->get();
         });
+
+        $this->bumpListingsIndexCacheVersion();
+
+        return $images;
+    }
+
+    private function bumpListingsIndexCacheVersion(): void
+    {
+        $key = 'listings:index:version';
+
+        Cache::add($key, 1, now()->addDay());
+        Cache::increment($key);
     }
 }

@@ -12,6 +12,7 @@ use App\Services\BookingService;
 use App\Services\ListingService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 #[Group('Listings', 'Annonces publiques et gestion hôte')]
 class ListingController extends Controller
@@ -28,10 +29,19 @@ class ListingController extends Controller
         $filters = $request->only(['search', 'city', 'min_guests', 'bounds', 'padding_km']);
         $perPage = (int) $request->integer('per_page', 12);
         $perPage = max(1, min($perPage, 60));
+        $page = (int) $request->integer('page', 1);
 
-        $resource = ListingResource::collection($listingService->listPublic($filters, $perPage));
-        $response = $resource->response();
-        $payload = $response->getData(true);
+        $cacheKey = $this->listingsIndexCacheKey($filters, $perPage, $page);
+        $payload = Cache::remember($cacheKey, self::LISTINGS_CACHE_TTL, function () use (
+            $listingService,
+            $filters,
+            $perPage
+        ) {
+            $resource = ListingResource::collection($listingService->listPublic($filters, $perPage));
+
+            return $resource->response()->getData(true);
+        });
+        $response = response()->json($payload);
 
         return $this->withCacheHeaders($request, $response, $payload, true);
     }
@@ -119,5 +129,17 @@ class ListingController extends Controller
         $response->isNotModified($request);
 
         return $response;
+    }
+
+    private function listingsIndexCacheKey(array $filters, int $perPage, int $page): string
+    {
+        $version = (int) Cache::get('listings:index:version', 1);
+        $signature = sha1(json_encode([
+            'filters' => $filters,
+            'per_page' => $perPage,
+            'page' => $page,
+        ]));
+
+        return "listings:index:v{$version}:{$signature}";
     }
 }
