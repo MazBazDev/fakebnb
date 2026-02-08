@@ -48,12 +48,12 @@ const listingOptions = computed(() => {
 })
 
 async function loadListings() {
-  const [hostListings, cohostListings] = await Promise.all([
+  const [hostResponse, cohostResponse] = await Promise.all([
     fetchMyListings({ per_page: 100 }),
     fetchCohostListings({ per_page: 100 }),
   ])
-  hostListings.value = hostListings.data ?? []
-  cohostListings.value = cohostListings.data ?? []
+  hostListings.value = hostResponse.data ?? []
+  cohostListings.value = cohostResponse.data ?? []
   listings.value = [...hostListings.value, ...cohostListings.value]
 }
 
