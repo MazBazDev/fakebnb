@@ -152,6 +152,8 @@ Backend
 
  Annulation + remboursement
 
+ Clôture automatique après end_date (scheduler)
+
 Frontend
 
  Sélecteur de dates
@@ -161,6 +163,8 @@ Frontend
  Historique réservations (client)
 
  Planning réservations (hôte)
+
+ Détail réservation côté hôte + voyageur
 
  Empêcher réservation par hôte/co-hôte
 
@@ -203,6 +207,8 @@ Frontend
 
  UI temps réel (messages + notifications)
 
+ Flux séparés hôte / voyageur
+
 Tests
 
  Test accès conversation
@@ -213,7 +219,34 @@ Tests
 
 Critère OK : messagerie sécurisée, liée au contexte d’une annonce.
 
-💳 LOT 6 — Paiement (fake)
+📝 LOT 6 — Avis & notes
+Backend
+
+ Un seul avis par réservation
+
+ Avis post-séjour (voyageur uniquement)
+
+ Réponse hôte / co-hôte (si droit)
+
+ Ressources API minimalistes (listing, guest)
+
+Frontend
+
+ Affichage des avis sur une annonce
+
+ Formulaire avis en fin de séjour
+
+ Espace avis côté hôte + réponse
+
+Tests
+
+ Test création avis (voyageur)
+
+ Test réponse avis (hôte / co-hôte)
+
+Critère OK : avis fiables, droits respectés, réponse hôte possible.
+
+💳 LOT 7 — Paiement (fake)
 Backend
 
  Intent de paiement
@@ -234,7 +267,7 @@ Frontend
 
 Critère OK : le flow paiement est simulé de bout en bout.
 
-🔔 LOT 7 — Notifications (in-app + email)
+🔔 LOT 8 — Notifications (in-app + email)
 Backend
 
  Notifications DB + broadcast
@@ -251,7 +284,7 @@ Frontend
 
 Critère OK : l’utilisateur reçoit les événements clés.
 
-🧭 LOT 8 — Recherche & carte
+🧭 LOT 9 — Recherche & carte
 Backend
 
  Filtres (ville, capacité, texte) + pagination
@@ -268,7 +301,7 @@ Frontend
 
 Critère OK : recherche multi-critères + mode carte.
 
-⚡ LOT 9 — Cache navigateur (exigé TP)
+⚡ LOT 10 — Cache navigateur (exigé TP)
 Backend
 
  Headers Cache-Control
@@ -283,8 +316,6 @@ Backend
 
 Frontend
 
- Cache via Pinia (TTL simple)
-
  Revalidation conditionnelle (ETag)
 
  Démonstration claire (devtools)
@@ -293,9 +324,9 @@ Tests / preuve
 
  Capture ou explication dans la doc
 
-Critère OK : le cache est visible et justifiable.
+Critère OK : le cache HTTP est visible et justifiable.
 
-🧪 LOT 10 — Tests & qualité (transversal)
+🧪 LOT 11 — Tests & qualité (transversal)
 Backend
 
  Tests feature sur chaque domaine :
@@ -320,7 +351,7 @@ Règle repo
 
  Aucune feature “done” sans tests
 
-📚 LOT 11 — Documentation & livrables
+📚 LOT 12 — Documentation & livrables
 Docs (/docs)
 
  Architecture du projet
