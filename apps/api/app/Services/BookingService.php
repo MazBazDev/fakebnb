@@ -47,6 +47,17 @@ class BookingService
             ->get();
     }
 
+    public function countActiveForGuest(User $user): int
+    {
+        $today = Carbon::today();
+
+        return Booking::query()
+            ->where('guest_user_id', $user->id)
+            ->where('status', '!=', 'rejected')
+            ->whereDate('end_date', '>=', $today)
+            ->count();
+    }
+
     public function create(User $guest, array $data): Booking
     {
         Gate::authorize('create', Booking::class);

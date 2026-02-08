@@ -24,6 +24,16 @@ class BookingController extends Controller
     }
 
     /**
+     * Nombre de réservations actives du voyageur courant.
+     */
+    public function activeCount(Request $request, BookingService $bookingService)
+    {
+        return response()->json([
+            'count' => $bookingService->countActiveForGuest($request->user()),
+        ]);
+    }
+
+    /**
      * Créer une réservation.
      */
     public function store(StoreBookingRequest $request, BookingService $bookingService)

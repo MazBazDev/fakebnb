@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, RouterLink, useRouter } from 'vue-router'
 import { fetchListing, type Listing } from '@/services/listings'
-import { createBooking, fetchListingBookings, fetchBookings, type Booking } from '@/services/bookings'
+import { createBooking, fetchActiveBookingCount, fetchListingBookings, type Booking } from '@/services/bookings'
 import { createConversation } from '@/services/conversations'
 import { useAuthStore } from '@/stores/auth'
 import { getAmenityLabel } from '@/constants/amenities'
@@ -21,7 +21,7 @@ const messageError = ref<string | null>(null)
 const isMessaging = ref(false)
 const bookingStatus = ref<'pending' | 'confirmed' | 'rejected' | null>(null)
 const blockedDates = ref<Set<string>>(new Set())
-const myActiveBookings = ref<Booking[]>([])
+const myActiveBookingsCount = ref(0)
 const lightboxOpen = ref(false)
 const lightboxImage = ref<string | null>(null)
 const bookingForm = ref({
@@ -151,26 +151,16 @@ function statusClass(status?: string | null) {
   return 'bg-amber-50 text-amber-600 border-amber-100'
 }
 
-function isActiveBooking(booking: Booking) {
-  const today = new Date()
-  const todayValue = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
-  const end = new Date(booking.end_date)
-  return booking.status !== 'rejected' && end >= todayValue
-}
-
 async function loadActiveBookings() {
   if (!auth.isAuthenticated) {
-    myActiveBookings.value = []
+    myActiveBookingsCount.value = 0
     return
   }
 
   try {
-    const allBookings = await fetchBookings()
-    myActiveBookings.value = allBookings.filter(
-      (booking) => booking.guest_user_id === auth.user?.id && isActiveBooking(booking)
-    )
+    myActiveBookingsCount.value = await fetchActiveBookingCount()
   } catch {
-    myActiveBookings.value = []
+    myActiveBookingsCount.value = 0
   }
 }
 
@@ -235,7 +225,7 @@ watch(
     if (isAuthed) {
       loadActiveBookings()
     } else {
-      myActiveBookings.value = []
+      myActiveBookingsCount.value = 0
     }
   }
 )
@@ -331,11 +321,11 @@ async function contactHost() {
           <span class="h-1 w-1 rounded-full bg-slate-300"></span>
           <span>Annonce #{{ listing.id }}</span>
           <RouterLink
-            v-if="myActiveBookings.length"
+            v-if="myActiveBookingsCount > 0"
             to="/bookings"
             class="ml-auto rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 hover:text-slate-900"
           >
-            Voir mes réservations ({{ myActiveBookings.length }})
+            Voir mes réservations ({{ myActiveBookingsCount }})
           </RouterLink>
         </div>
         <div v-if="listing.host" class="flex items-center gap-3">
