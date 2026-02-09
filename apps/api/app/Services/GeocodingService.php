@@ -9,6 +9,10 @@ class GeocodingService
 {
     public function geocode(string $query): ?array
     {
+        if (! config('geocoding.enabled', true)) {
+            return null;
+        }
+
         $query = trim($query);
         if ($query === '') {
             return null;
@@ -17,15 +21,23 @@ class GeocodingService
         $cacheKey = 'geocode:' . md5($query);
 
         return Cache::remember($cacheKey, now()->addDays(30), function () use ($query) {
-            $response = Http::timeout(5)
-                ->withHeaders([
-                    'User-Agent' => config('app.name') . ' Geocoder',
-                ])
-                ->get('https://nominatim.openstreetmap.org/search', [
-                    'q' => $query,
-                    'format' => 'json',
-                    'limit' => 1,
-                ]);
+            try {
+                $response = Http::timeout((int) config('geocoding.timeout', 5))
+                    ->retry(
+                        (int) config('geocoding.retries', 1),
+                        (int) config('geocoding.retry_sleep', 200)
+                    )
+                    ->withHeaders([
+                        'User-Agent' => config('app.name') . ' Geocoder',
+                    ])
+                    ->get('https://nominatim.openstreetmap.org/search', [
+                        'q' => $query,
+                        'format' => 'json',
+                        'limit' => 1,
+                    ]);
+            } catch (\Throwable $e) {
+                return null;
+            }
 
             if (! $response->ok()) {
                 return null;
