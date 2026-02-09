@@ -84,8 +84,8 @@ class BookingService
         $hasConflict = Booking::query()
             ->where('listing_id', $data['listing_id'])
             ->where('status', 'confirmed')
-            ->where('start_date', '<', $end->toDateString())
-            ->where('end_date', '>', $start->toDateString())
+            ->whereDate('start_date', '<', $end->toDateString())
+            ->whereDate('end_date', '>', $start->toDateString())
             ->exists();
 
         if ($hasConflict) {
@@ -118,8 +118,8 @@ class BookingService
             ->where('listing_id', $booking->listing_id)
             ->where('status', 'confirmed')
             ->where('id', '!=', $booking->id)
-            ->where('start_date', '<', $booking->end_date->toDateString())
-            ->where('end_date', '>', $booking->start_date->toDateString())
+            ->whereDate('start_date', '<', $booking->end_date->toDateString())
+            ->whereDate('end_date', '>', $booking->start_date->toDateString())
             ->exists();
 
         if ($hasConflict) {
