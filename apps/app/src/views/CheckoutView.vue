@@ -91,21 +91,21 @@ async function spinCashoula() {
   if (!booking.value) return
   if (cashoulaState.value === 'spinning') return
 
+  cashoulaState.value = 'spinning'
+
   if (!booking.value.payment) {
     const intent = await createPaymentIntent(booking.value.id)
     booking.value.payment = intent.data
   }
-
-  cashoulaState.value = 'spinning'
 
   const baseAngle = cashoulaWon.value ? 45 : 225
   const jitter = Math.floor(Math.random() * 30) - 15
   const extraSpins = 6 + Math.floor(Math.random() * 3)
   spinRotation.value = 360 * extraSpins + baseAngle + jitter
 
-  await new Promise((resolve) => window.setTimeout(resolve, 1600))
+  await new Promise((resolve) => window.setTimeout(resolve, 1800))
   cashoulaState.value = 'revealed'
-  await new Promise((resolve) => window.setTimeout(resolve, 400))
+  await new Promise((resolve) => window.setTimeout(resolve, 150))
 }
 
 onMounted(load)
@@ -113,7 +113,7 @@ onMounted(load)
 watch(
   () => booking.value?.payment?.cashoula_direct_applied,
   (applied) => {
-    if (!applied) return
+    if (!applied || cashoulaState.value !== 'idle') return
     const baseAngle = cashoulaWon.value ? 45 : 225
     spinRotation.value = baseAngle
     cashoulaState.value = 'revealed'
