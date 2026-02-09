@@ -11,6 +11,8 @@ export type Payment = {
   amount_service: number
   commission_amount: number
   payout_amount: number
+  cashoula_direct_applied?: boolean
+  cashoula_direct_won?: boolean
   status: 'requires_authorization' | 'authorized' | 'captured' | 'failed' | 'refunded'
   created_at?: string | null
 }

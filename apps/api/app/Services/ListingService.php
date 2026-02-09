@@ -189,6 +189,7 @@ class ListingService
             'longitude' => $data['longitude'] ?? null,
             'guest_capacity' => $data['guest_capacity'],
             'price_per_night' => $data['price_per_night'],
+            'cashoula_direct_enabled' => $data['cashoula_direct_enabled'] ?? false,
             'rules' => $data['rules'] ?? null,
             'amenities' => $data['amenities'] ?? [],
         ]);

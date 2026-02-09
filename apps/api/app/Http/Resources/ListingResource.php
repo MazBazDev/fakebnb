@@ -59,6 +59,7 @@ class ListingResource extends JsonResource
             'longitude' => $this->longitude,
             'guest_capacity' => $this->guest_capacity,
             'price_per_night' => $this->price_per_night,
+            'cashoula_direct_enabled' => (bool) $this->cashoula_direct_enabled,
             'rules' => $this->rules,
             'amenities' => $this->amenities ?? [],
             'can_book' => $request->route()?->parameter('listing') ? $canBook : null,

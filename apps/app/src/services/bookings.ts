@@ -14,6 +14,7 @@ export type Booking = {
     id: number
     title: string
     city: string
+    cashoula_direct_enabled?: boolean
     images?: Array<{
       id: number
       url: string
@@ -34,6 +35,8 @@ export type Booking = {
     amount_service: number
     commission_amount: number
     payout_amount: number
+    cashoula_direct_applied?: boolean
+    cashoula_direct_won?: boolean
   } | null
   review?: Review | null
   created_at?: string | null

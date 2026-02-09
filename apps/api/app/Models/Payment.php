@@ -17,6 +17,8 @@ class Payment extends Model
         'amount_service',
         'commission_amount',
         'payout_amount',
+        'cashoula_direct_applied',
+        'cashoula_direct_won',
         'status',
         'authorized_at',
         'captured_at',
@@ -27,6 +29,8 @@ class Payment extends Model
         'authorized_at' => 'datetime',
         'captured_at' => 'datetime',
         'refunded_at' => 'datetime',
+        'cashoula_direct_applied' => 'bool',
+        'cashoula_direct_won' => 'bool',
     ];
 
     public function booking(): BelongsTo

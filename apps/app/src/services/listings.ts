@@ -17,6 +17,7 @@ export type Listing = {
   longitude?: number | null
   guest_capacity: number
   price_per_night: number
+  cashoula_direct_enabled?: boolean
   rules: string | null
   amenities?: string[]
   can_book?: boolean | null

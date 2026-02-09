@@ -19,12 +19,14 @@ class Listing extends Model
         'longitude',
         'guest_capacity',
         'price_per_night',
+        'cashoula_direct_enabled',
         'rules',
         'amenities',
     ];
 
     protected $casts = [
         'amenities' => 'array',
+        'cashoula_direct_enabled' => 'bool',
     ];
 
     public function host(): BelongsTo

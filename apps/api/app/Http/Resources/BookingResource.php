@@ -26,6 +26,7 @@ class BookingResource extends JsonResource
                     'id' => $this->listing->id,
                     'title' => $this->listing->title,
                     'city' => $this->listing->city,
+                    'cashoula_direct_enabled' => (bool) $this->listing->cashoula_direct_enabled,
                     'images' => $this->listing->relationLoaded('images')
                         ? $this->listing->images->map(function ($image) {
                             return [
@@ -52,6 +53,8 @@ class BookingResource extends JsonResource
                     'amount_service' => $this->payment->amount_service,
                     'commission_amount' => $this->payment->commission_amount,
                     'payout_amount' => $this->payment->payout_amount,
+                    'cashoula_direct_applied' => (bool) $this->payment->cashoula_direct_applied,
+                    'cashoula_direct_won' => (bool) $this->payment->cashoula_direct_won,
                 ];
             }),
             'review' => $this->whenLoaded('review', function () {

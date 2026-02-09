@@ -38,6 +38,18 @@ class PaymentService
         $commissionAmount = (int) round($baseAmount * $commissionRate);
         $payoutAmount = max(0, $baseAmount - $commissionAmount);
 
+        $cashoulaApplied = (bool) $listing->cashoula_direct_enabled;
+        $cashoulaWon = $cashoulaApplied ? random_int(0, 1) === 1 : false;
+
+        if ($cashoulaWon) {
+            $baseAmount = 0;
+            $vatAmount = 0;
+            $serviceAmount = 0;
+            $totalAmount = 0;
+            $commissionAmount = 0;
+            $payoutAmount = 0;
+        }
+
         return Payment::firstOrCreate(
             [
                 'booking_id' => $booking->id,
@@ -51,6 +63,8 @@ class PaymentService
                 'amount_service' => $serviceAmount,
                 'commission_amount' => $commissionAmount,
                 'payout_amount' => $payoutAmount,
+                'cashoula_direct_applied' => $cashoulaApplied,
+                'cashoula_direct_won' => $cashoulaWon,
                 'status' => 'requires_authorization',
             ]
         );

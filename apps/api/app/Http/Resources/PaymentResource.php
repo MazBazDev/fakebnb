@@ -20,6 +20,8 @@ class PaymentResource extends JsonResource
             'amount_service' => $this->amount_service,
             'commission_amount' => $this->commission_amount,
             'payout_amount' => $this->payout_amount,
+            'cashoula_direct_applied' => (bool) $this->cashoula_direct_applied,
+            'cashoula_direct_won' => (bool) $this->cashoula_direct_won,
             'status' => $this->status,
             'authorized_at' => $this->authorized_at?->toIso8601String(),
             'captured_at' => $this->captured_at?->toIso8601String(),

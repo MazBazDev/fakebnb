@@ -27,6 +27,7 @@ const form = ref({
   full_address: '',
   guest_capacity: 1,
   price_per_night: 0,
+  cashoula_direct_enabled: false,
   rules: '',
   amenities: [] as string[],
 })
@@ -51,6 +52,7 @@ const { isLoading, error: loadError, execute: load } = useAsyncData(
       full_address: data.full_address ?? '',
       guest_capacity: data.guest_capacity,
       price_per_night: data.price_per_night,
+      cashoula_direct_enabled: data.cashoula_direct_enabled ?? false,
       rules: data.rules ?? '',
       amenities: data.amenities ?? [],
     }
@@ -76,6 +78,7 @@ const { isSubmitting, error: submitError, success, submit } = useFormSubmit(
       full_address: form.value.full_address || null,
       guest_capacity: Number(form.value.guest_capacity),
       price_per_night: Number(form.value.price_per_night),
+      cashoula_direct_enabled: form.value.cashoula_direct_enabled,
       rules: form.value.rules || null,
       amenities: form.value.amenities,
     })
@@ -360,6 +363,30 @@ onMounted(load)
             type="text"
             class="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-[#222222] transition placeholder:text-gray-400 focus:border-black focus:outline-none focus:ring-2 focus:ring-black"
           />
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-gray-200 bg-white p-4">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-sm font-semibold text-[#222222]">Cashoula direct</p>
+            <p class="mt-1 text-xs text-gray-500">
+              Active une roue 50/50 au checkout qui peut rendre la réservation gratuite.
+            </p>
+          </div>
+          <label class="relative inline-flex cursor-pointer items-center">
+            <input
+              v-model="form.cashoula_direct_enabled"
+              type="checkbox"
+              class="peer sr-only"
+            />
+            <div
+              class="h-6 w-11 rounded-full bg-gray-200 transition peer-checked:bg-[#FF385C]"
+            ></div>
+            <span
+              class="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5"
+            ></span>
+          </label>
         </div>
       </div>
 

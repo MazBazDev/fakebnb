@@ -23,6 +23,7 @@ class UpdateListingRequest extends FormRequest
             'longitude' => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
             'guest_capacity' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'price_per_night' => ['sometimes', 'integer', 'min:1'],
+            'cashoula_direct_enabled' => ['sometimes', 'boolean'],
             'rules' => ['nullable', 'string'],
             'amenities' => ['nullable', 'array'],
             'amenities.*' => ['string', 'max:50'],
